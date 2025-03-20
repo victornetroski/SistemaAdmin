@@ -30,5 +30,5 @@ urlpatterns = [
     path('tasks/<int:task_id>/delete', views.delete_task, name='delete_task'),
     path('logout/', views.signout, name='logout'),
     path('signin/', views.signin, name='signin'),
-    path('upload-xml/', views.upload_xml, name='upload_xml'),
+    path('upload_xml/', views.upload_xml, name='upload_xml'),
 ]
