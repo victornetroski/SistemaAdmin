@@ -124,9 +124,7 @@ def signin(request):
             login(request, user)
             return redirect("tasks")
         
-
-
-
+@login_required
 def upload_xml(request):
     if request.method == 'POST':
         form = XMLUploadForm(request.POST, request.FILES)
