@@ -7,6 +7,10 @@ from .forms import TaskForm
 from .models import Task
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from .forms import XMLUploadForm
+import xml.etree.ElementTree as ET  # Para procesar XML
+from reportlab.pdfgen import canvas  # Para generar PDFs
 # Create your views here.
 
 def home(request):
@@ -120,4 +124,37 @@ def signin(request):
             login(request, user)
             return redirect("tasks")
         
- 
+
+
+
+def upload_xml(request):
+    if request.method == 'POST':
+        form = XMLUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = request.FILES['file']
+
+            # Procesar el archivo XML
+            tree = ET.parse(file)
+            root = tree.getroot()
+
+            # Ejemplo: Obtener datos del XML
+            data = []
+            for child in root:
+                data.append(child.tag + ": " + child.text)
+
+            # Generar un PDF con los datos extraídos
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="output.pdf"'
+
+            pdf = canvas.Canvas(response)
+            pdf.drawString(100, 750, "Datos extraídos del XML:")
+            y = 700
+            for line in data:
+                pdf.drawString(100, y, line)
+                y -= 20
+            pdf.save()
+            return response
+    else:
+        form = XMLUploadForm()
+
+    return render(request, 'upload_xml.html', {'form': form})

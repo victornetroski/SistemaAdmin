@@ -10,3 +10,7 @@ class TaskForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'write a description'}),
             'important': forms.CheckboxInput(attrs={'class': 'form-check-inpiut'}),
         }
+
+
+class XMLUploadForm(forms.Form):
+    file = forms.FileField(label="Subir archivo XML")
