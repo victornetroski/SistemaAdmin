@@ -152,20 +152,22 @@ def procesar_xml(file):
         return None
 
         
-def extract_comprobante_attributes(root):
-    # Inicializar un diccionario para almacenar todos los atributos
-    comprobante_attributes = {}
+def extract_ns0_elements(root):
+    # Inicializar un diccionario para almacenar etiquetas y atributos
+    ns0_data = []
 
     # Definir el espacio de nombres (ajustar según el XML)
     namespaces = {'ns0': 'http://www.sat.gob.mx/cfd/4'}
 
-    # Buscar el nodo Comprobante con el espacio de nombres
-    comprobante_node = root.find('ns0:Comprobante', namespaces)
-    if comprobante_node is not None:
-        # Almacenar todos los atributos del nodo en un diccionario
-        comprobante_attributes = comprobante_node.attrib
+    # Recorrer todos los nodos con el prefijo 'ns0:'
+    for elem in root.iter():
+        if elem.tag.startswith("{http://www.sat.gob.mx/cfd/4}"):
+            # Obtener la etiqueta sin el espacio de nombres
+            tag_name = elem.tag.split('}', 1)[1]
+            # Obtener sus atributos
+            ns0_data.append({tag_name: elem.attrib})
 
-    return comprobante_attributes
+    return ns0_data
 
 @login_required
 def upload_xml(request):
@@ -183,27 +185,31 @@ def upload_xml(request):
                 tree = ET.parse(file)
                 root = tree.getroot()
 
-                # Extraer los atributos del nodo <Comprobante>
-                comprobante_attributes = extract_comprobante_attributes(root)
+                # Extraer todos los elementos relacionados con 'ns0'
+                ns0_data = extract_ns0_elements(root)
 
                 # Depurar en consola
-                print("Atributos extraídos del XML:", comprobante_attributes)
+                print("Datos extraídos con prefijo 'ns0':", ns0_data)
 
                 # Generar un PDF mostrando los datos extraídos
                 response = HttpResponse(content_type='application/pdf')
                 response['Content-Disposition'] = 'attachment; filename="output.pdf"'
 
                 pdf = canvas.Canvas(response)
-                pdf.drawString(100, 750, "Datos extraídos del XML:")
+                pdf.drawString(100, 750, "Datos extraídos del XML con prefijo 'ns0':")
 
-                # Iterar sobre los atributos y añadirlos al PDF
+                # Iterar sobre los elementos y añadirlos al PDF
                 y_position = 700  # Posición inicial en el eje Y
-                if comprobante_attributes:
-                    for key, value in comprobante_attributes.items():
-                        pdf.drawString(100, y_position, f"{key}: {value}")
-                        y_position -= 20  # Reducir la posición para la siguiente línea
+                if ns0_data:
+                    for data in ns0_data:
+                        for tag, attributes in data.items():
+                            pdf.drawString(100, y_position, f"Etiqueta: {tag}")
+                            y_position -= 20
+                            for attr_key, attr_value in attributes.items():
+                                pdf.drawString(120, y_position, f"{attr_key}: {attr_value}")
+                                y_position -= 20
                 else:
-                    pdf.drawString(100, y_position, "No se encontraron datos en el nodo Comprobante")
+                    pdf.drawString(100, y_position, "No se encontraron datos con prefijo 'ns0'.")
 
                 pdf.save()
                 return response
