@@ -166,6 +166,19 @@ def extract_ns0_elements(root):
 
     return ns0_data
 
+def extract_total_from_comprobante(root):
+    # Definir el espacio de nombres para manejar prefijos
+    namespaces = {'ns0': 'http://www.sat.gob.mx/cfd/4'}
+    
+    # Buscar el nodo <Comprobante>
+    comprobante_node = root.find('ns0:Comprobante', namespaces)
+    if comprobante_node is not None:
+        # Extraer el atributo 'Total' si existe
+        return comprobante_node.attrib.get("Total")
+    
+    return None  # Retornar None si no se encuentra el nodo o el atributo
+
+
 @login_required
 def upload_xml(request):
     if request.method == 'POST':
@@ -188,42 +201,19 @@ def upload_xml(request):
                 # Depurar en consola
                 print("Datos extraídos con prefijo 'ns0':", ns0_data)
 
-                # Generar un PDF mostrando los datos extraídos
+                # Extraer el atributo 'Total' del nodo <Comprobante>
+                total = extract_total_from_comprobante(root)
+
+                # Generar el PDF mostrando el dato extraído
                 response = HttpResponse(content_type='application/pdf')
                 response['Content-Disposition'] = 'attachment; filename="output.pdf"'
 
                 pdf = canvas.Canvas(response)
-                pdf.drawString(100, 750, "Datos extraídos del XML con prefijo 'ns0':")
-
-                 # Iterar sobre los elementos y añadirlos al PDF
-                y_position = 700  # Posición inicial en el eje Y
-                if ns0_data:
-                    for data in ns0_data:
-                        for tag, attributes in data.items():
-                            # Si la posición Y es demasiado baja, crear una nueva página
-                            if y_position < 50:
-                                pdf.showPage()  # Crear nueva página
-                                pdf.drawString(100, 750, "Continuación de datos extraídos del XML:")  # Encabezado en la nueva página
-                                y_position = 700  # Reiniciar posición Y
-
-                            pdf.drawString(100, y_position, f"Etiqueta: {tag}")
-                            y_position -= 20
-
-                            for attr_key, attr_value in attributes.items():
-                                # Si la posición Y es demasiado baja, crear una nueva página
-                                if y_position < 50:
-                                    pdf.showPage()  # Crear nueva página
-                                    pdf.drawString(100, 750, "Continuación de datos extraídos del XML:")  # Encabezado
-                                    y_position = 700  # Reiniciar posición Y
-
-                                pdf.drawString(120, y_position, f"{attr_key}: {attr_value}")
-                                y_position -= 20
-                                
-                else:
-                    pdf.drawString(100, y_position, "No se encontraron datos con prefijo 'ns0'.")
-
+                pdf.drawString(100, 750, "Datos extraídos del XML:")
+                pdf.drawString(100, 700, f"Total: {total or 'No encontrado'}")  # Imprime el valor de 'Total'
                 pdf.save()
                 return response
+
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             return HttpResponse("Error en el servidor.", status=500)
