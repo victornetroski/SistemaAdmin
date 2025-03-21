@@ -8,13 +8,7 @@ from .models import Task
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from .forms import XMLUploadForm
-import xml.etree.ElementTree as ET  # Para procesar XML
-from reportlab.pdfgen import canvas  # Para generar PDFs
 import logging
-from xml.etree.ElementTree import ParseError
-import os
-from PyPDF2 import PdfReader, PdfWriter
 from django.conf import settings
 
 
