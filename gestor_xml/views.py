@@ -51,9 +51,14 @@ def signup(request):
         })
 
 @login_required
+def gestor_xml(request):
+    return render(request, 'gestor_xml/gestor_xml.html')
+
+@login_required
 def tasks(request):
     tasks = Task.objects.filter(user=request.user, datecompleted__isnull=True)
     return render(request,'tasks.html', {'tasks':tasks})
+
 
 @login_required
 def tasks_completed(request):
