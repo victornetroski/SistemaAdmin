@@ -141,7 +141,10 @@ def upload_xml(request):
                 # Ejemplo: Obtener datos del XML
                 data = []
                 for child in root:
-                    data.append(child.tag + ": " + child.text)
+                    if child.text is None:
+                        logger.warning(f"El nodo '{child.tag}' no tiene texto.")
+                    data.append(child.tag + ": " + (child.text or ""))
+
 
                 # Generar un PDF con los datos extraídos
                 response = HttpResponse(content_type='application/pdf')
