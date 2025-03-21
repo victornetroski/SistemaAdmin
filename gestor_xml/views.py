@@ -113,8 +113,8 @@ def upload_xml(request):
                 # Extraer todos los elementos relacionados con 'ns0'
                 ns0_data = extract_ns0_elements(root)
 
-                # Depurar en consola
-                print("Datos extraídos con prefijo 'ns0':", ns0_data)
+                """# Depurar en consola
+                print("Datos extraídos con prefijo 'ns0':", ns0_data)"""
 
                 # Obtener el valor de 'Total' en la etiqueta 'Comprobante'
                 total = extract_total(ns0_data)
