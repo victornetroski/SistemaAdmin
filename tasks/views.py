@@ -128,6 +128,27 @@ def signin(request):
             login(request, user)
             return redirect("tasks")
         
+import xml.etree.ElementTree as ET
+
+def procesar_xml(file):
+    try:
+        # Intentar cargar y analizar el archivo XML
+        tree = ET.parse(file)  # Esto carga el archivo XML en un árbol
+        root = tree.getroot()  # Obtiene la raíz del árbol
+
+        # Si llega aquí, el XML se cargó correctamente
+        print("XML cargado correctamente.")
+        return root
+    except ET.ParseError as e:
+        # Capturar errores relacionados con el formato del XML
+        print(f"Error en el formato del XML: {e}")
+        return None
+    except Exception as e:
+        # Capturar otros errores genéricos
+        print(f"Error inesperado: {e}")
+        return None
+
+        
 
 def extract_moneda(root):
     moneda = None
