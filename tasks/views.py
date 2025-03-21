@@ -195,16 +195,30 @@ def upload_xml(request):
                 pdf = canvas.Canvas(response)
                 pdf.drawString(100, 750, "Datos extraídos del XML con prefijo 'ns0':")
 
-                # Iterar sobre los elementos y añadirlos al PDF
+                 # Iterar sobre los elementos y añadirlos al PDF
                 y_position = 700  # Posición inicial en el eje Y
                 if ns0_data:
                     for data in ns0_data:
                         for tag, attributes in data.items():
+                            # Si la posición Y es demasiado baja, crear una nueva página
+                            if y_position < 50:
+                                pdf.showPage()  # Crear nueva página
+                                pdf.drawString(100, 750, "Continuación de datos extraídos del XML:")  # Encabezado en la nueva página
+                                y_position = 700  # Reiniciar posición Y
+
                             pdf.drawString(100, y_position, f"Etiqueta: {tag}")
                             y_position -= 20
+
                             for attr_key, attr_value in attributes.items():
+                                # Si la posición Y es demasiado baja, crear una nueva página
+                                if y_position < 50:
+                                    pdf.showPage()  # Crear nueva página
+                                    pdf.drawString(100, 750, "Continuación de datos extraídos del XML:")  # Encabezado
+                                    y_position = 700  # Reiniciar posición Y
+
                                 pdf.drawString(120, y_position, f"{attr_key}: {attr_value}")
                                 y_position -= 20
+                                
                 else:
                     pdf.drawString(100, y_position, "No se encontraron datos con prefijo 'ns0'.")
 
