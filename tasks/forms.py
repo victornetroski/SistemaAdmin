@@ -12,5 +12,4 @@ class TaskForm(forms.ModelForm):
         }
 
 
-class XMLUploadForm(forms.Form):
-    file = forms.FileField(label="Subir archivo XML")
+
