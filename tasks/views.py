@@ -128,8 +128,6 @@ def signin(request):
             login(request, user)
             return redirect("tasks")
         
-import xml.etree.ElementTree as ET
-
 def procesar_xml(file):
 
     try:
@@ -150,7 +148,6 @@ def procesar_xml(file):
         # Capturar otros errores genéricos
         print(f"Error inesperado: {e}")
         return None
-
         
 def extract_ns0_elements(root):
     # Inicializar un diccionario para almacenar etiquetas y atributos
