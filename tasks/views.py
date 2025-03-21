@@ -183,13 +183,17 @@ def fill_pdf_template(pdf_template_path, response, total_value):
     reader = PdfReader(pdf_template_path)
     writer = PdfWriter()
 
+    # Listar todos los campos del formulario para depuración
+    fields = reader.get_fields()
+    print("Campos disponibles en el formulario:", fields.keys())
+
     # Copiar páginas y rellenar el campo Total
     for page in reader.pages:
         writer.add_page(page)
 
     # Rellenar el campo 'Total' (ajustar según nombre del campo)
     writer.update_page_form_field_values(
-        writer.pages[0],
+        writer.pages[1],
         {"Text Field 599": total_value}  # Aquí se llena el valor de Total
     )
 
@@ -221,6 +225,7 @@ def upload_xml(request):
 
                 # Obtener el valor de 'Total' en la etiqueta 'Comprobante'
                 total = extract_total(ns0_data)
+                print("Valor extraído para 'Total':", total) 
 
                 # Ruta al archivo de plantilla desde la carpeta del proyecto
                 pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
