@@ -32,5 +32,5 @@ urlpatterns = [
     path('tasks/<int:task_id>/delete', views.delete_task, name='delete_task'),
     path('logout/', views.signout, name='logout'),
     path('signin/', views.signin, name='signin'),
-    path('gestor_xml/', include('gestor_xml.urls'), views.gestor_xml, name='gestor_xml'),
+    path('gestor_xml/', views.gestor_xml, name='gestor_xml'),
 ]
