@@ -12,6 +12,8 @@ from .forms import XMLUploadForm
 import xml.etree.ElementTree as ET  # Para procesar XML
 from reportlab.pdfgen import canvas  # Para generar PDFs
 import logging
+from xml.etree.ElementTree import ParseError
+
 logger = logging.getLogger(__name__)
 # Create your views here.
 
@@ -127,12 +129,30 @@ def signin(request):
             return redirect("tasks")
         
 @login_required
+# Definición de la función extract_moneda
+def extract_moneda(root):
+    moneda = None
+    # Recorrer los nodos del XML
+    for child in root:
+        if child.text and "Moneda=" in child.text:
+            # Extraer el valor después de la leyenda 'Moneda='
+            moneda = child.text.split("Moneda=")[1].strip()
+            break  # Detener la búsqueda tras encontrar el primer resultado
+    return moneda
+
+# Vista principal
 def upload_xml(request):
     if request.method == 'POST':
         try:
             form = XMLUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 file = request.FILES['file']
+                
+                # Validar si el archivo no está vacío
+                if file.size == 0:
+                    return HttpResponse("El archivo está vacío. Por favor, sube un archivo XML válido.", status=400)
+
+                # Procesar el archivo XML
                 tree = ET.parse(file)
                 root = tree.getroot()
 
@@ -148,6 +168,8 @@ def upload_xml(request):
                 pdf.drawString(100, 700, f"Moneda: {moneda or 'No encontrado'}")
                 pdf.save()
                 return response
+        except ParseError:
+            return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             return HttpResponse("Error en el servidor.", status=500)
