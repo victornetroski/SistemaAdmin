@@ -133,29 +133,19 @@ def upload_xml(request):
             form = XMLUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 file = request.FILES['file']
-
-                # Procesar el archivo XML
                 tree = ET.parse(file)
                 root = tree.getroot()
 
-                # Ejemplo: Obtener datos del XML
-                data = []
-                for child in root:
-                    if child.text is None:
-                        logger.warning(f"El nodo '{child.tag}' no tiene texto.")
-                    data.append(child.tag + ": " + (child.text or ""))
+                # Extraer el dato de Moneda
+                moneda = extract_moneda(root)
 
-
-                # Generar un PDF con los datos extraídos
+                # Generar un PDF mostrando el dato extraído
                 response = HttpResponse(content_type='application/pdf')
                 response['Content-Disposition'] = 'attachment; filename="output.pdf"'
 
                 pdf = canvas.Canvas(response)
-                pdf.drawString(100, 750, "Datos extraídos del XML:")
-                y = 700
-                for line in data:
-                    pdf.drawString(100, y, line)
-                    y -= 20
+                pdf.drawString(100, 750, "Dato extraído del XML:")
+                pdf.drawString(100, 700, f"Moneda: {moneda or 'No encontrado'}")
                 pdf.save()
                 return response
         except Exception as e:
@@ -165,4 +155,3 @@ def upload_xml(request):
         form = XMLUploadForm()
 
     return render(request, 'upload_xml.html', {'form': form})
-
