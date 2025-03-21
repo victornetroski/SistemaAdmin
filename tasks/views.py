@@ -134,7 +134,7 @@ def extract_moneda(root):
     for child in root:
         # Verificar si 'Moneda' está en los atributos del nodo
         if "Moneda" in child.attrib:
-            moneda = child.attrib["Moneda="]
+            moneda = child.attrib["Moneda"]
             break  # Detener la búsqueda después de encontrar el primer resultado
     return moneda
 
@@ -146,14 +146,15 @@ def upload_xml(request):
             form = XMLUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 file = request.FILES['file']
-                
+
                 # Validar si el archivo no está vacío
                 if file.size == 0:
                     return HttpResponse("El archivo está vacío. Por favor, sube un archivo XML válido.", status=400)
 
-                # Procesar el archivo XML
-                tree = ET.parse(file)
-                root = tree.getroot()
+                # Usar la nueva función para procesar el XML
+                root = procesar_xml(file)
+                if root is None:
+                    return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
 
                 # Extraer el dato de Moneda
                 moneda = extract_moneda(root)
@@ -167,8 +168,6 @@ def upload_xml(request):
                 pdf.drawString(100, 700, f"Moneda: {moneda or 'No encontrado'}")
                 pdf.save()
                 return response
-        except ParseError:
-            return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             return HttpResponse("Error en el servidor.", status=500)
