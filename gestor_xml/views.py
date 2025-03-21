@@ -3,12 +3,11 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.db import IntegrityError
-from .forms import TaskForm
-from .models import Task
+from .forms import  XMLUploadForm
+from .models import XMLFile
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from .forms import XMLUploadForm
 import xml.etree.ElementTree as ET  # Para procesar XML
 from reportlab.pdfgen import canvas  # Para generar PDFs
 import logging

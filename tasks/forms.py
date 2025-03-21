@@ -11,7 +11,3 @@ class TaskForm(forms.ModelForm):
             'important': forms.CheckboxInput(attrs={'class': 'form-check-inpiut'}),
         }
 
-class XMLUploadForm(forms.Form):
-    file = forms.FileField(label="Subir archivo XML")
-
-

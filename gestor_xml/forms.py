@@ -1,15 +1,5 @@
 from django import forms
-from .models import Task
-
-class TaskForm(forms.ModelForm):
-    class Meta:
-        model = Task
-        fields = ['title', 'description', 'important']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'write a title'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'write a description'}),
-            'important': forms.CheckboxInput(attrs={'class': 'form-check-inpiut'}),
-        }
+from .models import XMLFile
 
 class XMLUploadForm(forms.Form):
     file = forms.FileField(label="Subir archivo XML")
