@@ -16,6 +16,7 @@ from xml.etree.ElementTree import ParseError
 import os
 from PyPDF2 import PdfReader, PdfWriter
 from django.conf import settings
+logger = logging.getLogger(__name__)
 
 # Create your views here.
         
