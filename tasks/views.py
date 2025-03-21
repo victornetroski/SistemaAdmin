@@ -152,22 +152,19 @@ def procesar_xml(file):
         return None
 
         
-def extract_comprobante_data(root):
-    # Inicializar los valores como None
-    moneda = None
-    subtotal = None
-    total = None
+
+def extract_comprobante_attributes(root):
+    # Inicializar un diccionario para almacenar todos los atributos
+    comprobante_attributes = {}
 
     for child in root:
-        # Verificar si el nodo es <Comprobante> (manejar prefijos con "endswith")
+        # Verificar si el nodo es <Comprobante> (manejar prefijos)
         if child.tag.endswith("Comprobante"):
-            # Extraer Moneda, SubTotal y Total de los atributos si existen
-            moneda = child.attrib.get("Moneda")
-            subtotal = child.attrib.get("SubTotal")
-            total = child.attrib.get("Total")
+            # Almacenar todos los atributos del nodo en el diccionario
+            comprobante_attributes = child.attrib
             break  # Detener la búsqueda después de encontrar el nodo Comprobante
 
-    return moneda, subtotal, total
+    return comprobante_attributes
 
 @login_required
 def upload_xml(request):
@@ -182,11 +179,12 @@ def upload_xml(request):
                     return HttpResponse("El archivo está vacío. Por favor, sube un archivo XML válido.", status=400)
 
                 # Procesar el archivo XML
-                tree = ET.parse(file)
-                root = tree.getroot()
+                root = procesar_xml(file)
+                if root is None:
+                    return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
 
-                # Extraer los datos de Moneda, SubTotal y Total
-                moneda, subtotal, total = extract_comprobante_data(root)
+                # Extraer los atributos del nodo <Comprobante>
+                comprobante_attributes = extract_comprobante_attributes(root)
 
                 # Generar un PDF mostrando los datos extraídos
                 response = HttpResponse(content_type='application/pdf')
@@ -194,13 +192,15 @@ def upload_xml(request):
 
                 pdf = canvas.Canvas(response)
                 pdf.drawString(100, 750, "Datos extraídos del XML:")
-                pdf.drawString(100, 700, f"Moneda: {moneda or 'No encontrado'}")
-                pdf.drawString(100, 650, f"SubTotal: {subtotal or 'No encontrado'}")
-                pdf.drawString(100, 600, f"Total: {total or 'No encontrado'}")
+
+                # Iterar sobre los atributos y añadirlos al PDF
+                y_position = 700  # Posición inicial en el eje Y
+                for key, value in comprobante_attributes.items():
+                    pdf.drawString(100, y_position, f"{key}: {value}")
+                    y_position -= 20  # Reducir la posición para la siguiente línea
+
                 pdf.save()
                 return response
-        except ET.ParseError:
-            return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             return HttpResponse("Error en el servidor.", status=500)
@@ -208,3 +208,4 @@ def upload_xml(request):
         form = XMLUploadForm()
 
     return render(request, 'upload_xml.html', {'form': form})
+
