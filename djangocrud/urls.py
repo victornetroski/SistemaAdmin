@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from tasks import views
+from django.urls import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,5 +31,5 @@ urlpatterns = [
     path('tasks/<int:task_id>/delete', views.delete_task, name='delete_task'),
     path('logout/', views.signout, name='logout'),
     path('signin/', views.signin, name='signin'),
-    path('upload_xml/', views.upload_xml, name='upload_xml'),
+    path('gestor_xml/', include('gestor_xml.urls'), views.gestor_xml, name='gestor_xml'),
 ]
