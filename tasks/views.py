@@ -13,6 +13,8 @@ import xml.etree.ElementTree as ET  # Para procesar XML
 from reportlab.pdfgen import canvas  # Para generar PDFs
 import logging
 from xml.etree.ElementTree import ParseError
+import os
+from PyPDF2 import PdfReader, PdfWriter
 
 logger = logging.getLogger(__name__)
 # Create your views here.
@@ -174,6 +176,26 @@ def extract_total(ns0_data):
     return None  # Retornar None si no se encuentra el atributo
 
 
+def fill_pdf_template(pdf_template_path, response, total_value):
+    # Leer el PDF editable
+    reader = PdfReader(pdf_template_path)
+    writer = PdfWriter()
+
+    # Copiar páginas y rellenar el campo Total
+    for page in reader.pages:
+        writer.add_page(page)
+
+    # Rellenar el campo 'Total' (ajustar según nombre del campo)
+    writer.update_page_form_field_values(
+        writer.pages[0],
+        {"Text Field 599": total_value}  # Aquí se llena el valor de Total
+    )
+
+    # Guardar el resultado directamente en la respuesta HTTP
+    writer.write(response)
+
+
+
 @login_required
 def upload_xml(request):
     if request.method == 'POST':
@@ -187,8 +209,7 @@ def upload_xml(request):
                     return HttpResponse("El archivo está vacío. Por favor, sube un archivo XML válido.", status=400)
 
                 # Procesar el archivo XML
-                tree = ET.parse(file)
-                root = tree.getroot()
+                root = procesar_xml(file)
 
                 # Extraer todos los elementos relacionados con 'ns0'
                 ns0_data = extract_ns0_elements(root)
@@ -199,16 +220,17 @@ def upload_xml(request):
                 # Obtener el valor de 'Total' en la etiqueta 'Comprobante'
                 total = extract_total(ns0_data)
 
-                # Generar el PDF mostrando solo el dato de 'Total'
+                # Ruta al archivo de plantilla desde la carpeta del proyecto
+                pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
+
+                # Crear el response para el PDF
                 response = HttpResponse(content_type='application/pdf')
                 response['Content-Disposition'] = 'attachment; filename="output.pdf"'
 
-                pdf = canvas.Canvas(response)
-                pdf.drawString(100, 750, "Datos extraídos del XML:")
-                pdf.drawString(100, 700, f"Total: {total or 'No encontrado'}")  # Imprime el valor de 'Total'
-                pdf.save()
-                return response
+                # Rellenar el PDF con el valor de 'Total'
+                fill_pdf_template(pdf_template_path, response, total)
 
+                return response  # Retornar el PDF generado
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             return HttpResponse("Error en el servidor.", status=500)
