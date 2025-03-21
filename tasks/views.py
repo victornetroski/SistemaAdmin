@@ -152,16 +152,22 @@ def procesar_xml(file):
         return None
 
         
-
-def extract_moneda(root):
+def extract_comprobante_data(root):
+    # Inicializar los valores como None
     moneda = None
-    for child in root:
-        # Verificar si 'Moneda' está en los atributos del nodo
-        if "Moneda" in child.attrib:
-            moneda = child.attrib["Moneda"]
-            break  # Detener la búsqueda después de encontrar el primer resultado
-    return moneda
+    subtotal = None
+    total = None
 
+    for child in root:
+        # Verificar si el nodo es <Comprobante> (manejar prefijos con "endswith")
+        if child.tag.endswith("Comprobante"):
+            # Extraer Moneda, SubTotal y Total de los atributos si existen
+            moneda = child.attrib.get("Moneda")
+            subtotal = child.attrib.get("SubTotal")
+            total = child.attrib.get("Total")
+            break  # Detener la búsqueda después de encontrar el nodo Comprobante
+
+    return moneda, subtotal, total
 
 @login_required
 def upload_xml(request):
@@ -175,23 +181,26 @@ def upload_xml(request):
                 if file.size == 0:
                     return HttpResponse("El archivo está vacío. Por favor, sube un archivo XML válido.", status=400)
 
-                # Usar la nueva función para procesar el XML
-                root = procesar_xml(file)
-                if root is None:
-                    return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
+                # Procesar el archivo XML
+                tree = ET.parse(file)
+                root = tree.getroot()
 
-                # Extraer el dato de Moneda
-                moneda = extract_moneda(root)
+                # Extraer los datos de Moneda, SubTotal y Total
+                moneda, subtotal, total = extract_comprobante_data(root)
 
-                # Generar un PDF mostrando el dato extraído
+                # Generar un PDF mostrando los datos extraídos
                 response = HttpResponse(content_type='application/pdf')
                 response['Content-Disposition'] = 'attachment; filename="output.pdf"'
 
                 pdf = canvas.Canvas(response)
-                pdf.drawString(100, 750, "Dato extraído del XML:")
+                pdf.drawString(100, 750, "Datos extraídos del XML:")
                 pdf.drawString(100, 700, f"Moneda: {moneda or 'No encontrado'}")
+                pdf.drawString(100, 650, f"SubTotal: {subtotal or 'No encontrado'}")
+                pdf.drawString(100, 600, f"Total: {total or 'No encontrado'}")
                 pdf.save()
                 return response
+        except ET.ParseError:
+            return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             return HttpResponse("Error en el servidor.", status=500)
