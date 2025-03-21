@@ -128,8 +128,7 @@ def signin(request):
             login(request, user)
             return redirect("tasks")
         
-@login_required
-# Definición de la función extract_moneda
+
 def extract_moneda(root):
     moneda = None
     # Recorrer los nodos del XML
@@ -140,7 +139,7 @@ def extract_moneda(root):
             break  # Detener la búsqueda tras encontrar el primer resultado
     return moneda
 
-# Vista principal
+@login_required
 def upload_xml(request):
     if request.method == 'POST':
         try:
