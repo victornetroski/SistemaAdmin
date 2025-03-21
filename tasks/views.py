@@ -166,17 +166,12 @@ def extract_ns0_elements(root):
 
     return ns0_data
 
-def extract_total_from_comprobante(root):
-    # Definir el espacio de nombres para manejar prefijos
-    namespaces = {'ns0': 'http://www.sat.gob.mx/cfd/4'}
-    
-    # Buscar el nodo <Comprobante>
-    comprobante_node = root.find('ns0:Comprobante', namespaces)
-    if comprobante_node is not None:
-        # Extraer el atributo 'Total' si existe
-        return comprobante_node.attrib.get("Total")
-    
-    return None  # Retornar None si no se encuentra el nodo o el atributo
+def extract_total(ns0_data):
+    # Recorrer los datos y buscar el atributo 'Total' en la etiqueta 'Comprobante'
+    for data in ns0_data:
+        if 'Comprobante' in data:  # Verificar si el nodo es 'Comprobante'
+            return data['Comprobante'].get('Total')  # Devolver el valor de 'Total'
+    return None  # Retornar None si no se encuentra el atributo
 
 
 @login_required
@@ -201,10 +196,10 @@ def upload_xml(request):
                 # Depurar en consola
                 print("Datos extraídos con prefijo 'ns0':", ns0_data)
 
-                # Extraer el atributo 'Total' del nodo <Comprobante>
-                total = extract_total_from_comprobante(root)
+                # Obtener el valor de 'Total' en la etiqueta 'Comprobante'
+                total = extract_total(ns0_data)
 
-                # Generar el PDF mostrando el dato extraído
+                # Generar el PDF mostrando solo el dato de 'Total'
                 response = HttpResponse(content_type='application/pdf')
                 response['Content-Disposition'] = 'attachment; filename="output.pdf"'
 
