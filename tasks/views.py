@@ -21,33 +21,6 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 # Create your views here.
 
-def home(request):
-
-    return render(request, 'home.html')
-
-def signup(request):
-
-    if request.method == 'GET' :
-        return render(request, 'signup.html', {
-                'form': UserCreationForm
-        })
-    else:
-        if request.POST['password1'] == request.POST['password2']:
-            try:
-                user = User.objects.create_user(username=request.POST['username'], password=request.POST['password1'])
-                user.save()
-                login(request, user)
-                return redirect('tasks')
-            except IntegrityError:
-                return render(request, 'signup.html', {
-                    'form': UserCreationForm, 
-                    'error' : 'El usuario ya existe'
-                })
-        return render(request, 'signup.html', {
-              'form': UserCreationForm,
-              'error': 'Las contraseñas no coinciden. Intenta nuevamente'
-        
-        })
 
 @login_required
 def tasks(request):
@@ -110,10 +83,7 @@ def delete_task(request, task_id):
         task.delete()
         return redirect ('tasks')
 
-@login_required
-def signout(request):
-    logout(request)
-    return redirect('home')
+
 
 def signin(request):
     if request.method == 'GET':
