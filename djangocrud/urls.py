@@ -15,22 +15,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from tasks import views
-from django.urls import include
-from gestor_xml import views
+from django.urls import path, include
+from tasks import views as task_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),
-    path('signup/', views.signup, name='signup'), 
-    path('tasks/', views.tasks, name='tasks'),
-    path('tasks_completed/', views.tasks_completed, name='tasks_completed'),
-    path('tasks/create/', views.create_task, name='create_task'),
-    path('tasks/<int:task_id>/', views.task_detail, name='task_detail'),
-    path('tasks/<int:task_id>/complete', views.complete_task, name='complete_task'),
-    path('tasks/<int:task_id>/delete', views.delete_task, name='delete_task'),
-    path('logout/', views.signout, name='logout'),
-    path('signin/', views.signin, name='signin'),
-    path('gestor_xml/', views.gestor_xml, name='gestor_xml'),
+    path('', task_views.home, name='home'),  # Ruta para la página principal
+    path('signup/', task_views.signup, name='signup'),  # Registro de usuario
+    path('signin/', task_views.signin, name='signin'),  # Inicio de sesión
+    path('logout/', task_views.signout, name='logout'),  # Cerrar sesión
+    path('tasks/', include('tasks.urls')),  # Incluye las rutas de `tasks`
+    path('gestor_xml/', include('gestor_xml.urls')),  # Incluye las rutas de `gestor_xml`
 ]
