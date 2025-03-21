@@ -131,12 +131,13 @@ def signin(request):
 import xml.etree.ElementTree as ET
 
 def procesar_xml(file):
-    print("Estructura del XML:", ET.tostring(root, encoding='utf-8').decode('utf-8'))
 
     try:
         # Intentar cargar y analizar el archivo XML
         tree = ET.parse(file)  # Esto carga el archivo XML en un árbol
         root = tree.getroot()  # Obtiene la raíz del árbol
+
+        print("Estructura del XML:", ET.tostring(root, encoding='utf-8').decode('utf-8'))
 
         # Si llega aquí, el XML se cargó correctamente
         print("XML cargado correctamente.")
