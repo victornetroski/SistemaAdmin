@@ -131,13 +131,13 @@ def signin(request):
 
 def extract_moneda(root):
     moneda = None
-    # Recorrer los nodos del XML
     for child in root:
-        if child.text and "Moneda=" in child.text:
-            # Extraer el valor después de la leyenda 'Moneda='
-            moneda = child.text.split("Moneda=")[1].strip()
-            break  # Detener la búsqueda tras encontrar el primer resultado
+        # Verificar si 'Moneda' está en los atributos del nodo
+        if "Moneda" in child.attrib:
+            moneda = child.attrib["Moneda"]
+            break  # Detener la búsqueda después de encontrar el primer resultado
     return moneda
+
 
 @login_required
 def upload_xml(request):
