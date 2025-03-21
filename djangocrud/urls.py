@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from tasks import views
 from django.urls import include
+from gestor_xml import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
