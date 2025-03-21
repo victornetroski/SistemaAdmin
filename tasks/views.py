@@ -152,21 +152,20 @@ def procesar_xml(file):
         return None
 
         
-
 def extract_comprobante_attributes(root):
     # Inicializar un diccionario para almacenar todos los atributos
     comprobante_attributes = {}
 
-    # Obtener el espacio de nombres si existe
-    namespace = {'cfdi': 'http://www.sat.gob.mx/cfd/4'}
+    # Definir el espacio de nombres (ajustar según el XML)
+    namespaces = {'ns0': 'http://www.sat.gob.mx/cfd/4'}
 
-    # Buscar el nodo Comprobante usando el espacio de nombres
-    comprobante_node = root.find('cfdi:Comprobante', namespace)
+    # Buscar el nodo Comprobante con el espacio de nombres
+    comprobante_node = root.find('ns0:Comprobante', namespaces)
     if comprobante_node is not None:
+        # Almacenar todos los atributos del nodo en un diccionario
         comprobante_attributes = comprobante_node.attrib
 
     return comprobante_attributes
-
 
 @login_required
 def upload_xml(request):
@@ -181,13 +180,13 @@ def upload_xml(request):
                     return HttpResponse("El archivo está vacío. Por favor, sube un archivo XML válido.", status=400)
 
                 # Procesar el archivo XML
-                root = procesar_xml(file)
-                if root is None:
-                    return HttpResponse("El archivo XML no es válido o está mal formado.", status=400)
+                tree = ET.parse(file)
+                root = tree.getroot()
 
                 # Extraer los atributos del nodo <Comprobante>
-                
                 comprobante_attributes = extract_comprobante_attributes(root)
+
+                # Depurar en consola
                 print("Atributos extraídos del XML:", comprobante_attributes)
 
                 # Generar un PDF mostrando los datos extraídos
@@ -215,4 +214,3 @@ def upload_xml(request):
         form = XMLUploadForm()
 
     return render(request, 'upload_xml.html', {'form': form})
-
