@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,43 +21,23 @@
                     <a href="/" class="nav-link">Home</a>
                 </li>
     
-                {% if user.is_authenticated %}
+                
                 <li class="nav-item">
-                    <a href="{% url 'tasks' %}" class="nav-link">Tasks pending</a>
+                    <a href="/tasks/" class="nav-link">Tasks pending</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'tasks_completed' %}" class="nav-link">Tasks completed</a>
+                    <a href="/tasks/completed/" class="nav-link">Tasks completed</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'create_task' %}" class="nav-link">Create_task</a>
+                    <a href="/tasks/create/" class="nav-link">Create_task</a>
                 </li>
                 <li class="nav-item">
                     <a href="/logout/" class="nav-link">Logout</a>
                 </li>
                 <li class="nav-item">
-                    <a href="/gestor_xml/" class="nav-link">SubirXML</a>
+                    <a href="/gestor_xml" class="nav-link">SubirXML</a>
                 </li>
-                {% else %}
-                <li class="nav-item">
-                    <a href="/signup/" class="nav-link">Signup</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/signin" class="nav-link">Signin</a>
-                </li>
-
-    
-            </ul>
-            <form class="d-flex" role="search">
-              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-              <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
-          </div>
-        </div>
-      </nav>
-    <nav>
-        <ul>
- 
-            {% endif %}
+                
 
 
         </ul>
@@ -66,7 +47,15 @@
 
 
 
-    {% block content %}
-    {% endblock %}
+    
+
+<main class="container py-5" >
+    <section class="card card-body">
+        <h1 class="text-center">Bienvenido al Sistema Administrativo</h1>
+        <p class="text-center">Bienvenid@</p>
+    </section>
+</main>
+
+
 </body>
 </html>
