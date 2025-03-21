@@ -134,7 +134,7 @@ def extract_moneda(root):
     for child in root:
         # Verificar si 'Moneda' está en los atributos del nodo
         if "Moneda" in child.attrib:
-            moneda = child.attrib["Moneda"]
+            moneda = child.attrib["Moneda="]
             break  # Detener la búsqueda después de encontrar el primer resultado
     return moneda
 
