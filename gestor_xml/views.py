@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def gestor_xml(request):
-    return render(request, 'gestor_xml/.html')
+    return render(request, 'gestor_xml.html')
 
 
 def procesar_xml(file):
