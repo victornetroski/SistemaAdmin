@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
-@login_required
+"""@login_required
 def gestor_xml(request):
     return render(request, 'gestor_xml.html')
-
+"""
 
 def procesar_xml(file):
 
