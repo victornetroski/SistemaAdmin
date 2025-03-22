@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from tasks import views as task_views
-
+from gestor_xml import views as gestor_xml_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
