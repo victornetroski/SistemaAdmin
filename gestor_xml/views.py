@@ -19,14 +19,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 # Create your views here.
-
-"""@login_required
-def gestor_xml(request):
-    return render(request, 'gestor_xml.html')
-"""
-
 def procesar_xml(file):
-
     try:
         # Intentar cargar y analizar el archivo XML
         tree = ET.parse(file)  # Esto carga el archivo XML en un árbol
@@ -36,6 +29,21 @@ def procesar_xml(file):
 
         # Si llega aquí, el XML se cargó correctamente
         print("XML cargado correctamente.")
+
+        # Declarar el namespace necesario (para manejar `tfd`)
+        namespaces = {'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
+
+        # Buscar el nodo <tfd:TimbreFiscalDigital>
+        timbre = root.find('.//tfd:TimbreFiscalDigital', namespaces)
+        if timbre is not None:
+            uuid = timbre.attrib.get('UUID', None)  # Extraer el valor de `UUID`
+            if uuid:
+                print(f"Valor de UUID extraído: {uuid}")
+            else:
+                print("No se encontró el atributo UUID.")
+        else:
+            print("No se encontró el nodo <tfd:TimbreFiscalDigital>.")
+
         return root
     except ET.ParseError as e:
         # Capturar errores relacionados con el formato del XML
@@ -45,6 +53,7 @@ def procesar_xml(file):
         # Capturar otros errores genéricos
         print(f"Error inesperado: {e}")
         return None
+
         
 def extract_ns0_elements(root):
     # Inicializar un diccionario para almacenar etiquetas y atributos
@@ -62,6 +71,8 @@ def extract_ns0_elements(root):
             ns0_data.append({tag_name: elem.attrib})
 
     return ns0_data
+
+
 
 def extract_total(ns0_data):
     # Recorrer los datos y buscar el atributo 'Total' en la etiqueta 'Comprobante'
