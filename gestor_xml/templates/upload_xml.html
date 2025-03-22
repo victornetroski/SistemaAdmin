@@ -3,10 +3,17 @@
 {% block content %}
 
 <h1>Sube tu archivo XML</h1>
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Subir</button>
-</form>
 
+<main class="container">
+    <div class="row">
+        <div class="col-md-4 offset-md-4 mt-5">        
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Subir</button>
+            </form>    
+        </div>
+    </div>
+</main>
 {% endblock %}
+
