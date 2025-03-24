@@ -12,7 +12,7 @@ admin.site.register(Complemento)
 
 @admin.register(Comprobante)
 class ComprobanteAdmin(admin.ModelAdmin):
-    list_display = ('uuid', 'fecha', 'total', 'tipo_comprobante')  # Campos que se mostrarán en la tabla
-    search_fields = ('uuid', 'folio')  # Campos que se pueden buscar
+    list_display = ('fecha', 'total', 'tipo_comprobante')  # Campos que se mostrarán en la tabla
+    search_fields = ('folio')  # Campos que se pueden buscar
     list_filter = ('forma_pago', 'tipo_comprobante')  # Filtros disponibles
 
