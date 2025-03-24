@@ -213,7 +213,6 @@ def guardar_datos_xml(root):
             }
         )
 
-
 @login_required
 def upload_xml(request):
     extracted_data = None  # Inicializar la variable para almacenar los datos extraídos
@@ -227,33 +226,49 @@ def upload_xml(request):
                 # Validar si el archivo no está vacío
                 if file.size == 0:
                     messages.error(request, "El archivo está vacío. Por favor, sube un archivo XML válido.")
-                else:
-                    # Procesar el archivo XML
-                    root = procesar_xml(file)
-                    if root is None:
-                        messages.error(request, "Error al procesar el archivo XML. Verifica el formato.")
-                    else:
-                        # Guardar los datos del XML
-                        guardar_datos_xml(root)
-                        messages.success(request, "Los datos del archivo XML se guardaron exitosamente.")
+                    return render(request, 'upload_xml.html', {'form': form})
 
-                        # Extraer datos para mostrar en la plantilla
-                        namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4'}
-                        comprobante_attrib = root.attrib
+                # Procesar el archivo XML
+                root = procesar_xml(file)
+                if root is None:
+                    messages.error(request, "Error al procesar el archivo XML. Verifica el formato.")
+                    return render(request, 'upload_xml.html', {'form': form})
 
-                        extracted_data = {
-                            'version': comprobante_attrib.get('Version'),
-                            'folio': comprobante_attrib.get('Folio'),
-                            'fecha': comprobante_attrib.get('Fecha'),
-                            'forma_pago': comprobante_attrib.get('FormaPago'),
-                            'total': comprobante_attrib.get('Total'),
-                            'emisor': root.find('.//cfdi:Emisor', namespaces).attrib if root.find('.//cfdi:Emisor', namespaces) else {},
-                            'receptor': root.find('.//cfdi:Receptor', namespaces).attrib if root.find('.//cfdi:Receptor', namespaces) else {},
-                        }
+                # Guardar los datos del XML en la base de datos
+                guardar_datos_xml(root)
+                messages.success(request, "Los datos del archivo XML se guardaron exitosamente.")
+
+                # Extraer datos para mostrar en la plantilla
+                namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4'}
+                comprobante_attrib = root.attrib
+
+                extracted_data = {
+                    'version': comprobante_attrib.get('Version'),
+                    'folio': comprobante_attrib.get('Folio'),
+                    'fecha': comprobante_attrib.get('Fecha'),
+                    'forma_pago': comprobante_attrib.get('FormaPago'),
+                    'total': comprobante_attrib.get('Total'),
+                    'emisor': root.find('.//cfdi:Emisor', namespaces).attrib if root.find('.//cfdi:Emisor', namespaces) else {},
+                    'receptor': root.find('.//cfdi:Receptor', namespaces).attrib if root.find('.//cfdi:Receptor', namespaces) else {},
+                }
+
+                # Obtener el valor de 'Total' (opcional si necesitas esto en el PDF)
+                total = extract_total(extract_ns0_elements(root))
+                print("Valor extraído para 'Total':", total)
+
+                # Generar el PDF
+                pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
+                response = HttpResponse(content_type='application/pdf')
+                response['Content-Disposition'] = 'attachment; filename="output.pdf"'
+                fill_pdf_template(pdf_template_path, response, total)
+
+                # Retornar el PDF generado
+                return response
 
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             messages.error(request, "Ocurrió un error al procesar el archivo XML.")
+            return render(request, 'upload_xml.html', {'form': form})
 
     else:
         form = XMLUploadForm()
