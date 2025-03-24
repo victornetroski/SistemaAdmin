@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 import logging
 from django.conf import settings
+from django.contrib import messages
 
 
 logger = logging.getLogger(__name__)
