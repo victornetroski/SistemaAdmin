@@ -17,6 +17,8 @@ from PyPDF2 import PdfReader, PdfWriter
 from django.conf import settings
 from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos, Complemento
 from django.contrib import messages
+from django.utils.timezone import make_aware
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +115,13 @@ def guardar_datos_xml(root):
     
     # Comprobante
     comprobante_attrib = root.attrib
+    fecha = comprobante_attrib.get('Fecha')
+    if fecha:
+        fecha = make_aware(datetime.strptime(fecha, '%Y-%m-%dT%H:%M:%S'))
     comprobante = Comprobante.objects.create(
         version=comprobante_attrib.get('Version'),
         folio=comprobante_attrib.get('Folio'),
-        fecha=comprobante_attrib.get('Fecha'),
+        fecha=fecha,
         forma_pago=comprobante_attrib.get('FormaPago'),
         no_certificado=comprobante_attrib.get('NoCertificado'),
         certificado=comprobante_attrib.get('Certificado'),
@@ -191,13 +196,16 @@ def guardar_datos_xml(root):
     # Complemento
     complemento = root.find('.//cfdi:Complemento/tfd:TimbreFiscalDigital', namespaces)
     if complemento is not None:
+        fecha_timbrado = complemento.attrib.get('FechaTimbrado')
+        if fecha_timbrado:
+            fecha_timbrado = make_aware(datetime.strptime(fecha_timbrado, '%Y-%m-%dT%H:%M:%S'))
         uuid = complemento.attrib.get('UUID')
         Complemento.objects.update_or_create(
             uuid=uuid,
             defaults={
                 'comprobante': comprobante,
                 'version': complemento.attrib.get('Version'),
-                'fecha_timbrado': complemento.attrib.get('FechaTimbrado'),
+                'fecha_timbrado': fecha_timbrado,
                 'rfc_prov_certif': complemento.attrib.get('RfcProvCertif'),
                 'sello_cfd': complemento.attrib.get('SelloCFD'),
                 'no_certificado_sat': complemento.attrib.get('NoCertificadoSAT'),
