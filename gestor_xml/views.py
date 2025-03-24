@@ -214,9 +214,10 @@ def guardar_datos_xml(root):
         )
 
 
-
 @login_required
 def upload_xml(request):
+    extracted_data = None  # Inicializar la variable para almacenar los datos extraídos
+
     if request.method == 'POST':
         try:
             form = XMLUploadForm(request.POST, request.FILES)
@@ -225,41 +226,37 @@ def upload_xml(request):
 
                 # Validar si el archivo no está vacío
                 if file.size == 0:
-                    return HttpResponse("El archivo está vacío. Por favor, sube un archivo XML válido.", status=400)
+                    messages.error(request, "El archivo está vacío. Por favor, sube un archivo XML válido.")
+                else:
+                    # Procesar el archivo XML
+                    root = procesar_xml(file)
+                    if root is None:
+                        messages.error(request, "Error al procesar el archivo XML. Verifica el formato.")
+                    else:
+                        # Guardar los datos del XML
+                        guardar_datos_xml(root)
+                        messages.success(request, "Los datos del archivo XML se guardaron exitosamente.")
 
-                # Procesar el archivo XML
-                root = procesar_xml(file)
-                if root is None:
-                    return HttpResponse("Error al procesar el archivo XML. Por favor, verifica el formato.", status=400)
+                        # Extraer datos para mostrar en la plantilla
+                        namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4'}
+                        comprobante_attrib = root.attrib
 
-                # Guardar los datos del XML en la base de datos
-                guardar_datos_xml(root)
-
-                # Confirmar que los datos se guardaron correctamente
-                messages.success(request, "Los datos del archivo XML se guardaron exitosamente.")
-
-                # Ruta al archivo de plantilla desde la carpeta del proyecto
-                pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
-
-                # Obtener el valor de 'Total' (opcional si necesitas esto en el PDF)
-                total = extract_total(extract_ns0_elements(root))
-                print("Valor extraído para 'Total':", total)
-
-                # Crear el response para el PDF
-                response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'attachment; filename="output.pdf"'
-
-                # Rellenar el PDF con el valor de 'Total'
-                fill_pdf_template(pdf_template_path, response, total)
-
-                return response  # Retornar el PDF generado
+                        extracted_data = {
+                            'version': comprobante_attrib.get('Version'),
+                            'folio': comprobante_attrib.get('Folio'),
+                            'fecha': comprobante_attrib.get('Fecha'),
+                            'forma_pago': comprobante_attrib.get('FormaPago'),
+                            'total': comprobante_attrib.get('Total'),
+                            'emisor': root.find('.//cfdi:Emisor', namespaces).attrib if root.find('.//cfdi:Emisor', namespaces) else {},
+                            'receptor': root.find('.//cfdi:Receptor', namespaces).attrib if root.find('.//cfdi:Receptor', namespaces) else {},
+                        }
 
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
             messages.error(request, "Ocurrió un error al procesar el archivo XML.")
-            return HttpResponse("Error en el servidor.", status=500)
 
     else:
         form = XMLUploadForm()
 
-    return render(request, 'upload_xml.html', {'form': form})
+    # Enviar el formulario y los datos extraídos al contexto
+    return render(request, 'upload_xml.html', {'form': form, 'extracted_data': extracted_data})
