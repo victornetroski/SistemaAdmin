@@ -190,16 +190,20 @@ def guardar_datos_xml(root):
     # Complemento
     complemento = root.find('.//cfdi:Complemento/tfd:TimbreFiscalDigital', namespaces)
     if complemento is not None:
-        Complemento.objects.create(
-            comprobante=comprobante,
-            version=complemento.attrib.get('Version'),
-            uuid=complemento.attrib.get('UUID'),
-            fecha_timbrado=complemento.attrib.get('FechaTimbrado'),
-            rfc_prov_certif=complemento.attrib.get('RfcProvCertif'),
-            sello_cfd=complemento.attrib.get('SelloCFD'),
-            no_certificado_sat=complemento.attrib.get('NoCertificadoSAT'),
-            sello_sat=complemento.attrib.get('SelloSAT')
+        uuid = complemento.attrib.get('UUID')
+        Complemento.objects.update_or_create(
+            uuid=uuid,
+            defaults={
+                'comprobante': comprobante,
+                'version': complemento.attrib.get('Version'),
+                'fecha_timbrado': complemento.attrib.get('FechaTimbrado'),
+                'rfc_prov_certif': complemento.attrib.get('RfcProvCertif'),
+                'sello_cfd': complemento.attrib.get('SelloCFD'),
+                'no_certificado_sat': complemento.attrib.get('NoCertificadoSAT'),
+                'sello_sat': complemento.attrib.get('SelloSAT'),
+            }
         )
+
 
 
 @login_required
