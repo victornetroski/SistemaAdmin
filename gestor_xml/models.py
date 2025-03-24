@@ -5,8 +5,6 @@ class XMLFile(models.Model):
     file = models.FileField(upload_to='uploads/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
-from django.db import models
-
 class Comprobante(models.Model):
     version = models.CharField(max_length=10)
     folio = models.CharField(max_length=50, null=True, blank=True)
