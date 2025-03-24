@@ -27,9 +27,9 @@
                 <li><strong>Emisor:</strong> {{ extracted_data.emisor.Rfc }} - {{ extracted_data.emisor.Nombre }}</li>
                 <li><strong>Receptor:</strong> {{ extracted_data.receptor.Rfc }} - {{ extracted_data.receptor.Nombre }}</li>
             </ul>
+            <a href="{% url 'generate_pdf' %}" class="btn btn-success mt-3">Generar PDF</a>
         </div>
     </div>
     {% endif %}
 </main>
 {% endblock %}
-

@@ -212,7 +212,6 @@ def guardar_datos_xml(root):
                 'sello_sat': complemento.attrib.get('SelloSAT'),
             }
         )
-
 @login_required
 def upload_xml(request):
     extracted_data = None  # Inicializar la variable para almacenar los datos extraídos
@@ -252,18 +251,8 @@ def upload_xml(request):
                     'receptor': root.find('.//cfdi:Receptor', namespaces).attrib if root.find('.//cfdi:Receptor', namespaces) else {},
                 }
 
-                # Obtener el valor de 'Total' (opcional si necesitas esto en el PDF)
-                total = extract_total(extract_ns0_elements(root))
-                print("Valor extraído para 'Total':", total)
-
-                # Generar el PDF
-                pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
-                response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'attachment; filename="output.pdf"'
-                fill_pdf_template(pdf_template_path, response, total)
-
-                # Retornar el PDF generado
-                return response
+                # Guardar los datos para el siguiente paso (por ejemplo, generación del PDF)
+                request.session['extracted_data'] = extracted_data  # Usar sesión para almacenar datos temporalmente
 
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
@@ -275,3 +264,20 @@ def upload_xml(request):
 
     # Enviar el formulario y los datos extraídos al contexto
     return render(request, 'upload_xml.html', {'form': form, 'extracted_data': extracted_data})
+
+
+@login_required
+def generate_pdf(request):
+    extracted_data = request.session.get('extracted_data', None)  # Recuperar datos de sesión
+
+    if extracted_data:
+        pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="output.pdf"'
+
+        # Rellenar el PDF con el valor de 'Total'
+        fill_pdf_template(pdf_template_path, response, extracted_data.get('total'))
+        return response
+
+    messages.error(request, "No hay datos disponibles para generar el PDF.")
+    return redirect('upload_xml')  # Redirigir al formulario principal
