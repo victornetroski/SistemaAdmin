@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<main class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2 mt-5">
+            <h1>Gestor de XML</h1>
+            <hr>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button class="btn btn-primary" type="submit">Subir XML</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mostrar los datos extraídos del XML -->
+    {% if extracted_data %}
+    <div class="row mt-5">
+        <div class="col-md-8 offset-md-2">
+            <h3>Datos extraídos del XML</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Versión</strong></td>
+                        <td>{{ extracted_data.version }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Folio</strong></td>
+                        <td>{{ extracted_data.folio }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fecha</strong></td>
+                        <td>{{ extracted_data.fecha }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Forma de Pago</strong></td>
+                        <td>{{ extracted_data.forma_pago }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td>{{ extracted_data.total }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Emisor</strong></td>
+                        <td>{{ extracted_data.emisor.Rfc }} - {{ extracted_data.emisor.Nombre }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Receptor</strong></td>
+                        <td>{{ extracted_data.receptor.Rfc }} - {{ extracted_data.receptor.Nombre }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <a href="{% url 'generate_pdf' %}" class="btn btn-success mt-3">Generar PDF</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mostrar mensaje si no hay datos extraídos -->
+    {% if not extracted_data %}
+    <div class="row mt-5">
+        <div class="col-md-8 offset-md-2 text-center">
+            <p class="text-danger"><strong>No hay datos disponibles. Por favor, sube un archivo XML.</strong></p>
+        </div>
+    </div>
+    {% endif %}
+</main>
+{% endblock %}
