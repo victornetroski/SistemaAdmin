@@ -1,7 +1,7 @@
 from django.urls import path
-from . import views
+from . import views  # Importa las vistas de tu aplicación
 
 urlpatterns = [
-    path('', views.upload_xml, name='upload_xml'),  # Página principal del gestor xml
-    path('upload_xml/', views.upload_xml, name='upload_xml'),
+    path('upload_xml/', views.upload_xml, name='upload_xml'),  # Ruta para subir el XML
+    path('generate_pdf/', views.generate_pdf, name='generate_pdf'),  # Ruta para generar el PDF
 ]
