@@ -15,6 +15,7 @@ from xml.etree.ElementTree import ParseError
 import os
 from PyPDF2 import PdfReader, PdfWriter
 from django.conf import settings
+from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos, Complemento
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,101 @@ def fill_pdf_template(pdf_template_path, response, total_value):
     # Guardar el resultado directamente en la respuesta HTTP
     writer.write(response)
 
+from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos, Complemento
+
+def guardar_datos_xml(root):
+    namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4', 'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
+    
+    # Comprobante
+    comprobante_attrib = root.attrib
+    comprobante = Comprobante.objects.create(
+        version=comprobante_attrib.get('Version'),
+        folio=comprobante_attrib.get('Folio'),
+        fecha=comprobante_attrib.get('Fecha'),
+        forma_pago=comprobante_attrib.get('FormaPago'),
+        no_certificado=comprobante_attrib.get('NoCertificado'),
+        certificado=comprobante_attrib.get('Certificado'),
+        subtotal=comprobante_attrib.get('SubTotal'),
+        moneda=comprobante_attrib.get('Moneda'),
+        exportacion=comprobante_attrib.get('Exportacion'),
+        total=comprobante_attrib.get('Total'),
+        tipo_comprobante=comprobante_attrib.get('TipoDeComprobante'),
+        metodo_pago=comprobante_attrib.get('MetodoPago'),
+        lugar_expedicion=comprobante_attrib.get('LugarExpedicion'),
+        sello=comprobante_attrib.get('Sello')
+    )
+
+    # Emisor
+    emisor = root.find('.//cfdi:Emisor', namespaces)
+    if emisor is not None:
+        Emisor.objects.create(
+            comprobante=comprobante,
+            rfc=emisor.attrib.get('Rfc'),
+            nombre=emisor.attrib.get('Nombre'),
+            regimen_fiscal=emisor.attrib.get('RegimenFiscal')
+        )
+
+    # Receptor
+    receptor = root.find('.//cfdi:Receptor', namespaces)
+    if receptor is not None:
+        Receptor.objects.create(
+            comprobante=comprobante,
+            rfc=receptor.attrib.get('Rfc'),
+            nombre=receptor.attrib.get('Nombre'),
+            domicilio_fiscal=receptor.attrib.get('DomicilioFiscalReceptor'),
+            regimen_fiscal_receptor=receptor.attrib.get('RegimenFiscalReceptor'),
+            uso_cfdi=receptor.attrib.get('UsoCFDI')
+        )
+
+    # Conceptos
+    conceptos = root.findall('.//cfdi:Concepto', namespaces)
+    for concepto in conceptos:
+        concepto_obj = Concepto.objects.create(
+            comprobante=comprobante,
+            objeto_imp=concepto.attrib.get('ObjetoImp'),
+            clave_prod_serv=concepto.attrib.get('ClaveProdServ'),
+            no_identificacion=concepto.attrib.get('NoIdentificacion'),
+            cantidad=concepto.attrib.get('Cantidad'),
+            clave_unidad=concepto.attrib.get('ClaveUnidad'),
+            unidad=concepto.attrib.get('Unidad'),
+            descripcion=concepto.attrib.get('Descripcion'),
+            valor_unitario=concepto.attrib.get('ValorUnitario'),
+            importe=concepto.attrib.get('Importe')
+        )
+
+        # Traslados
+        traslados = concepto.findall('.//cfdi:Traslado', namespaces)
+        for traslado in traslados:
+            Traslado.objects.create(
+                concepto=concepto_obj,
+                impuesto=traslado.attrib.get('Impuesto'),
+                base=traslado.attrib.get('Base'),
+                tipo_factor=traslado.attrib.get('TipoFactor'),
+                tasa_o_cuota=traslado.attrib.get('TasaOCuota'),
+                importe=traslado.attrib.get('Importe')
+            )
+
+    # Impuestos
+    impuestos = root.find('.//cfdi:Impuestos', namespaces)
+    if impuestos is not None:
+        Impuestos.objects.create(
+            comprobante=comprobante,
+            total_trasladados=impuestos.attrib.get('TotalImpuestosTrasladados')
+        )
+
+    # Complemento
+    complemento = root.find('.//cfdi:Complemento/tfd:TimbreFiscalDigital', namespaces)
+    if complemento is not None:
+        Complemento.objects.create(
+            comprobante=comprobante,
+            version=complemento.attrib.get('Version'),
+            uuid=complemento.attrib.get('UUID'),
+            fecha_timbrado=complemento.attrib.get('FechaTimbrado'),
+            rfc_prov_certif=complemento.attrib.get('RfcProvCertif'),
+            sello_cfd=complemento.attrib.get('SelloCFD'),
+            no_certificado_sat=complemento.attrib.get('NoCertificadoSAT'),
+            sello_sat=complemento.attrib.get('SelloSAT')
+        )
 
 
 @login_required
@@ -120,19 +216,21 @@ def upload_xml(request):
 
                 # Procesar el archivo XML
                 root = procesar_xml(file)
+                if root is None:
+                    return HttpResponse("Error al procesar el archivo XML. Por favor, verifica el formato.", status=400)
 
-                # Extraer todos los elementos relacionados con 'ns0'
-                ns0_data = extract_ns0_elements(root)
+                # Guardar los datos del XML en la base de datos
+                guardar_datos_xml(root)
 
-                """# Depurar en consola
-                print("Datos extraídos con prefijo 'ns0':", ns0_data)"""
-
-                # Obtener el valor de 'Total' en la etiqueta 'Comprobante'
-                total = extract_total(ns0_data)
-                print("Valor extraído para 'Total':", total) 
+                # Confirmar que los datos se guardaron correctamente
+                messages.success(request, "Los datos del archivo XML se guardaron exitosamente.")
 
                 # Ruta al archivo de plantilla desde la carpeta del proyecto
                 pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
+
+                # Obtener el valor de 'Total' (opcional si necesitas esto en el PDF)
+                total = extract_total(extract_ns0_elements(root))
+                print("Valor extraído para 'Total':", total)
 
                 # Crear el response para el PDF
                 response = HttpResponse(content_type='application/pdf')
@@ -142,11 +240,13 @@ def upload_xml(request):
                 fill_pdf_template(pdf_template_path, response, total)
 
                 return response  # Retornar el PDF generado
+
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
+            messages.error(request, "Ocurrió un error al procesar el archivo XML.")
             return HttpResponse("Error en el servidor.", status=500)
+
     else:
         form = XMLUploadForm()
 
     return render(request, 'upload_xml.html', {'form': form})
-
