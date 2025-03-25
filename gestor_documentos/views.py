@@ -11,7 +11,11 @@ import os
 
 @login_required
 def principal(request):
-    return render(request, 'gestor_documentos.html')
+    try:
+        return render(request, 'gestor_documentos/gestor_documentos.html')
+    except Exception as e:
+        messages.error(request, f'Error al cargar la página: {str(e)}')
+        return redirect('home')
 
 @login_required
 def lista_asegurados(request):
