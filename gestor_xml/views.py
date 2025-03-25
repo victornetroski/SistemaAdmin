@@ -19,7 +19,7 @@ from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos
 from django.contrib import messages
 from django.utils.timezone import make_aware
 from datetime import datetime
-from .models import Asegurado, Documento
+from gestor_documentos.models import Asegurado, Documento
 
 logger = logging.getLogger(__name__)
 
@@ -88,26 +88,35 @@ def extract_total(ns0_data):
 
 
 def fill_pdf_template(pdf_template_path, response, total_value):
-    # Leer el PDF editable
-    reader = PdfReader(pdf_template_path)
-    writer = PdfWriter()
+    try:
+        # Verificar si el archivo existe
+        if not os.path.exists(pdf_template_path):
+            raise FileNotFoundError(f"No se encontró el archivo template: {pdf_template_path}")
 
-    # Listar todos los campos del formulario para depuración
-    fields = reader.get_fields()
-    print("Campos disponibles en el formulario:", fields.keys())
+        # Leer el PDF editable
+        reader = PdfReader(pdf_template_path)
+        writer = PdfWriter()
 
-    # Copiar páginas y rellenar el campo Total
-    for page in reader.pages:
-        writer.add_page(page)
+        # Listar todos los campos del formulario para depuración
+        fields = reader.get_fields()
+        logger.info(f"Campos disponibles en el formulario: {fields.keys()}")
 
-    # Rellenar el campo 'Total' (ajustar según nombre del campo)
-    writer.update_page_form_field_values(
-        writer.pages[1],
-        {"Text Field 599": total_value}  # Aquí se llena el valor de Total
-    )
+        # Copiar páginas y rellenar el campo Total
+        for page in reader.pages:
+            writer.add_page(page)
 
-    # Guardar el resultado directamente en la respuesta HTTP
-    writer.write(response)
+        # Rellenar el campo 'Total' (ajustar según nombre del campo)
+        writer.update_page_form_field_values(
+            writer.pages[1],
+            {"Text Field 599": str(total_value)}  # Convertir a string para asegurar compatibilidad
+        )
+
+        # Guardar el resultado directamente en la respuesta HTTP
+        writer.write(response)
+        
+    except Exception as e:
+        logger.error(f"Error al generar el PDF: {str(e)}")
+        raise
 
 from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos, Complemento
 
@@ -295,22 +304,32 @@ def generate_pdf(request, asegurado_id):
             messages.error(request, 'No se encontró el total en el documento XML.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
+        # Definir la ruta del template PDF
+        pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
+        
+        # Verificar si el archivo existe
+        if not os.path.exists(pdf_template_path):
+            logger.error(f"No se encontró el archivo template en: {pdf_template_path}")
+            messages.error(request, 'Error: No se encontró el template del PDF.')
+            return redirect('detalle_asegurado', asegurado_id=asegurado_id)
+        
         # Crear la respuesta HTTP con el tipo de contenido PDF
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="reporte_{asegurado.id}.pdf"'
         
         # Rellenar el template del PDF con los datos
-        fill_pdf_template(
-            os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf'),
-            response,
-            total
-        )
+        fill_pdf_template(pdf_template_path, response, total)
         
         return response
         
     except Asegurado.DoesNotExist:
         messages.error(request, 'Asegurado no encontrado.')
         return redirect('lista_asegurados')
+    except FileNotFoundError as e:
+        logger.error(f"Error al encontrar el archivo template: {str(e)}")
+        messages.error(request, 'Error: No se encontró el template del PDF.')
+        return redirect('detalle_asegurado', asegurado_id=asegurado_id)
     except Exception as e:
+        logger.error(f"Error al generar el PDF: {str(e)}")
         messages.error(request, f'Error al generar el PDF: {str(e)}')
         return redirect('detalle_asegurado', asegurado_id=asegurado_id)
