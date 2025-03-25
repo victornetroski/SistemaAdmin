@@ -18,7 +18,11 @@ import os
 from PyPDF2 import PdfReader, PdfWriter
 import io
 from reportlab.lib.pagesizes import letter
-from .models import Asegurado, Documento
+from gestor_documentos.models import Asegurado, Documento
+from .models import (
+    XMLFile, Comprobante, Emisor, Receptor, 
+    Concepto, Traslado, Impuestos, Complemento
+)
 from .forms import XMLUploadForm
 
 logger = logging.getLogger(__name__)
