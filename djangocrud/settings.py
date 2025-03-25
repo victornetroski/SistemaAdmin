@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tasks',
-    'gestor_xml'
+    'gestor_xml',
+    'gestor_documentos'
 ]
 
 MIDDLEWARE = [
