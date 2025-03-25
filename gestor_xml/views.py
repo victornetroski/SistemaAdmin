@@ -3,22 +3,25 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.db import IntegrityError
-from .forms import  XMLUploadForm
-from .models import XMLFile
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-import xml.etree.ElementTree as ET  # Para procesar XML
-from reportlab.pdfgen import canvas  # Para generar PDFs
+from django.conf import settings
+from django.contrib import messages
+from django.utils.timezone import make_aware
+from datetime import datetime
+import xml.etree.ElementTree as ET
+from reportlab.pdfgen import canvas
 import logging
 from xml.etree.ElementTree import ParseError
 import os
 from PyPDF2 import PdfReader, PdfWriter
-from django.conf import settings
-from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos, Complemento
-from django.contrib import messages
-from django.utils.timezone import make_aware
-from datetime import datetime
+
+from .forms import XMLUploadForm
+from .models import (
+    XMLFile, Comprobante, Emisor, Receptor, 
+    Concepto, Traslado, Impuestos, Complemento
+)
 from gestor_documentos.models import Asegurado, Documento
 
 logger = logging.getLogger(__name__)
@@ -91,6 +94,7 @@ def fill_pdf_template(pdf_template_path, response, total_value):
     try:
         # Verificar si el archivo existe
         if not os.path.exists(pdf_template_path):
+            logger.error(f"No se encontró el archivo template: {pdf_template_path}")
             raise FileNotFoundError(f"No se encontró el archivo template: {pdf_template_path}")
 
         # Leer el PDF editable
@@ -101,11 +105,21 @@ def fill_pdf_template(pdf_template_path, response, total_value):
         fields = reader.get_fields()
         logger.info(f"Campos disponibles en el formulario: {fields.keys()}")
 
+        # Verificar si hay páginas en el PDF
+        if len(reader.pages) < 2:
+            logger.error("El PDF template no tiene suficientes páginas")
+            raise ValueError("El PDF template no tiene suficientes páginas")
+
         # Copiar páginas y rellenar el campo Total
         for page in reader.pages:
             writer.add_page(page)
 
-        # Rellenar el campo 'Total' (ajustar según nombre del campo)
+        # Verificar si el campo existe
+        if "Text Field 599" not in fields:
+            logger.error(f"El campo 'Text Field 599' no existe en el PDF. Campos disponibles: {fields.keys()}")
+            raise ValueError("El campo 'Text Field 599' no existe en el PDF")
+
+        # Rellenar el campo 'Total'
         writer.update_page_form_field_values(
             writer.pages[1],
             {"Text Field 599": str(total_value)}  # Convertir a string para asegurar compatibilidad
@@ -113,12 +127,11 @@ def fill_pdf_template(pdf_template_path, response, total_value):
 
         # Guardar el resultado directamente en la respuesta HTTP
         writer.write(response)
+        logger.info("PDF generado exitosamente")
         
     except Exception as e:
         logger.error(f"Error al generar el PDF: {str(e)}")
         raise
-
-from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos, Complemento
 
 def guardar_datos_xml(root):
     namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4', 'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
@@ -289,23 +302,27 @@ def generate_pdf(request, asegurado_id):
         ).order_by('-fecha_subida').first()
         
         if not documento_xml:
+            logger.error(f"No se encontró documento XML para el asegurado {asegurado_id}")
             messages.error(request, 'No se encontró ningún documento XML para este asegurado.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
         # Obtener los datos del XML
         datos_xml = documento_xml.datos_xml
         if not datos_xml:
+            logger.error(f"El documento XML {documento_xml.id} no tiene datos procesados")
             messages.error(request, 'El documento XML no tiene datos procesados.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
         # Obtener el total del XML
         total = datos_xml.get('total')
         if not total:
+            logger.error(f"No se encontró el total en el documento XML {documento_xml.id}")
             messages.error(request, 'No se encontró el total en el documento XML.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
         # Definir la ruta del template PDF
         pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
+        logger.info(f"Buscando template PDF en: {pdf_template_path}")
         
         # Verificar si el archivo existe
         if not os.path.exists(pdf_template_path):
@@ -317,19 +334,21 @@ def generate_pdf(request, asegurado_id):
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="reporte_{asegurado.id}.pdf"'
         
-        # Rellenar el template del PDF con los datos
-        fill_pdf_template(pdf_template_path, response, total)
-        
-        return response
+        try:
+            # Rellenar el template del PDF con los datos
+            fill_pdf_template(pdf_template_path, response, total)
+            logger.info(f"PDF generado exitosamente para el asegurado {asegurado_id}")
+            return response
+        except Exception as e:
+            logger.error(f"Error al generar el PDF: {str(e)}")
+            messages.error(request, f'Error al generar el PDF: {str(e)}')
+            return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
     except Asegurado.DoesNotExist:
+        logger.error(f"Asegurado {asegurado_id} no encontrado")
         messages.error(request, 'Asegurado no encontrado.')
         return redirect('lista_asegurados')
-    except FileNotFoundError as e:
-        logger.error(f"Error al encontrar el archivo template: {str(e)}")
-        messages.error(request, 'Error: No se encontró el template del PDF.')
-        return redirect('detalle_asegurado', asegurado_id=asegurado_id)
     except Exception as e:
-        logger.error(f"Error al generar el PDF: {str(e)}")
-        messages.error(request, f'Error al generar el PDF: {str(e)}')
+        logger.error(f"Error inesperado al generar PDF: {str(e)}")
+        messages.error(request, f'Error inesperado: {str(e)}')
         return redirect('detalle_asegurado', asegurado_id=asegurado_id)
