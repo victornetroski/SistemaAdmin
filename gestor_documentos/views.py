@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Documento, Asegurado
-from .forms import DocumentoForm
+from .forms import DocumentoForm, AseguradoForm
 from gestor_xml.views import procesar_xml
 import xml.etree.ElementTree as ET
 import os
@@ -27,21 +27,19 @@ def lista_asegurados(request):
 @login_required
 def agregar_asegurado(request):
     if request.method == 'POST':
-        try:
-            asegurado = Asegurado.objects.create(
-                nombre=request.POST['nombre'],
-                apellido_paterno=request.POST['apellido_paterno'],
-                apellido_materno=request.POST['apellido_materno'],
-                email=request.POST['email'],
-                telefono=request.POST['telefono'],
-                usuario=request.user
-            )
+        form = AseguradoForm(request.POST, request.FILES)
+        if form.is_valid():
+            asegurado = form.save(commit=False)
+            asegurado.usuario = request.user
+            asegurado.save()
             messages.success(request, 'Asegurado agregado exitosamente.')
             return redirect('lista_asegurados')
-        except Exception as e:
-            messages.error(request, f'Error al agregar asegurado: {str(e)}')
+        else:
+            messages.error(request, 'Por favor, corrija los errores en el formulario.')
+    else:
+        form = AseguradoForm()
     
-    return render(request, 'gestor_documentos/agregar_asegurado.html')
+    return render(request, 'gestor_documentos/agregar_asegurado.html', {'form': form})
 
 @login_required
 def detalle_asegurado(request, asegurado_id):
