@@ -16,13 +16,10 @@ import logging
 from xml.etree.ElementTree import ParseError
 import os
 from PyPDF2 import PdfReader, PdfWriter
-
+import io
+from reportlab.lib.pagesizes import letter
+from .models import Asegurado, Documento
 from .forms import XMLUploadForm
-from .models import (
-    XMLFile, Comprobante, Emisor, Receptor, 
-    Concepto, Traslado, Impuestos, Complemento
-)
-from gestor_documentos.models import Asegurado, Documento
 
 logger = logging.getLogger(__name__)
 
@@ -30,37 +27,38 @@ logger = logging.getLogger(__name__)
 def procesar_xml(file):
     try:
         # Intentar cargar y analizar el archivo XML
-        tree = ET.parse(file)  # Esto carga el archivo XML en un árbol
-        root = tree.getroot()  # Obtiene la raíz del árbol
+        tree = ET.parse(file)
+        root = tree.getroot()
 
-        print("Estructura del XML:", ET.tostring(root, encoding='utf-8').decode('utf-8'))
-
-        # Si llega aquí, el XML se cargó correctamente
-        print("XML cargado correctamente.")
-
-        # Declarar el namespace necesario (para manejar `tfd`)
+        # Extraer los datos necesarios
+        datos = {}
+        
+        # Extraer el total
+        total = extract_total(extract_ns0_elements(root))
+        if total:
+            datos['total'] = total
+            
+        # Extraer el UUID
         namespaces = {'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
-
-        # Buscar el nodo <tfd:TimbreFiscalDigital>
         timbre = root.find('.//tfd:TimbreFiscalDigital', namespaces)
         if timbre is not None:
-            uuid = timbre.attrib.get('UUID', None)  # Extraer el valor de `UUID`
+            uuid = timbre.attrib.get('UUID')
             if uuid:
-                print(f"Valor de UUID extraído: {uuid}")
-            else:
-                print("No se encontró el atributo UUID.")
-        else:
-            print("No se encontró el nodo <tfd:TimbreFiscalDigital>.")
+                datos['uuid'] = uuid
+                
+        # Extraer datos adicionales
+        ns0_data = extract_ns0_elements(root)
+        if ns0_data:
+            datos['ns0_data'] = ns0_data
 
-        return root
+        return root, datos
+        
     except ET.ParseError as e:
-        # Capturar errores relacionados con el formato del XML
         print(f"Error en el formato del XML: {e}")
-        return None
+        return None, None
     except Exception as e:
-        # Capturar otros errores genéricos
         print(f"Error inesperado: {e}")
-        return None
+        return None, None
 
         
 def extract_ns0_elements(root):
@@ -90,48 +88,32 @@ def extract_total(ns0_data):
     return None  # Retornar None si no se encuentra el atributo
 
 
-def fill_pdf_template(pdf_template_path, response, total_value):
+def fill_pdf_template(template_path, response, total):
     try:
-        # Verificar si el archivo existe
-        if not os.path.exists(pdf_template_path):
-            logger.error(f"No se encontró el archivo template: {pdf_template_path}")
-            raise FileNotFoundError(f"No se encontró el archivo template: {pdf_template_path}")
-
-        # Leer el PDF editable
-        reader = PdfReader(pdf_template_path)
-        writer = PdfWriter()
-
-        # Listar todos los campos del formulario para depuración
-        fields = reader.get_fields()
-        logger.info(f"Campos disponibles en el formulario: {fields.keys()}")
-
-        # Verificar si hay páginas en el PDF
-        if len(reader.pages) < 2:
-            logger.error("El PDF template no tiene suficientes páginas")
-            raise ValueError("El PDF template no tiene suficientes páginas")
-
-        # Copiar páginas y rellenar el campo Total
-        for page in reader.pages:
-            writer.add_page(page)
-
-        # Verificar si el campo existe
-        if "Text Field 599" not in fields:
-            logger.error(f"El campo 'Text Field 599' no existe en el PDF. Campos disponibles: {fields.keys()}")
-            raise ValueError("El campo 'Text Field 599' no existe en el PDF")
-
-        # Rellenar el campo 'Total'
-        writer.update_page_form_field_values(
-            writer.pages[1],
-            {"Text Field 599": str(total_value)}  # Convertir a string para asegurar compatibilidad
-        )
-
-        # Guardar el resultado directamente en la respuesta HTTP
-        writer.write(response)
-        logger.info("PDF generado exitosamente")
+        # Crear un nuevo PDF con el total
+        packet = io.BytesIO()
+        can = canvas.Canvas(packet, pagesize=letter)
+        can.drawString(100, 750, f"Total: ${total}")
+        can.save()
+        packet.seek(0)
         
+        # Abrir el template existente
+        with open(template_path, "rb") as template_file:
+            existing_pdf = PdfReader(template_file)
+            new_pdf = PdfReader(packet)
+            
+            # Crear el PDF final
+            output = PdfWriter()
+            
+            # Agregar las páginas
+            output.add_page(existing_pdf.pages[0])
+            output.add_page(new_pdf.pages[0])
+            
+            # Escribir el resultado
+            output.write(response)
+            
     except Exception as e:
-        logger.error(f"Error al generar el PDF: {str(e)}")
-        raise
+        raise Exception(f"Error al generar el PDF: {str(e)}")
 
 def guardar_datos_xml(root):
     namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4', 'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
@@ -237,7 +219,7 @@ def guardar_datos_xml(root):
         )
 @login_required
 def upload_xml(request):
-    extracted_data = None  # Inicializar la variable para almacenar los datos extraídos
+    extracted_data = None
 
     if request.method == 'POST':
         try:
@@ -251,31 +233,31 @@ def upload_xml(request):
                     return render(request, 'upload_xml.html', {'form': form})
 
                 # Procesar el archivo XML
-                root = procesar_xml(file)
+                root, datos = procesar_xml(file)
                 if root is None:
                     messages.error(request, "Error al procesar el archivo XML. Verifica el formato.")
                     return render(request, 'upload_xml.html', {'form': form})
 
                 # Guardar los datos del XML en la base de datos
                 guardar_datos_xml(root)
+                
+                # Guardar los datos extraídos en el documento
+                documento = form.save(commit=False)
+                documento.es_xml = True
+                documento.datos_xml = datos
+                documento.save()
+                
                 messages.success(request, "Los datos del archivo XML se guardaron exitosamente.")
 
                 # Extraer datos para mostrar en la plantilla
-                namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4'}
-                comprobante_attrib = root.attrib
-
                 extracted_data = {
-                    'version': comprobante_attrib.get('Version'),
-                    'folio': comprobante_attrib.get('Folio'),
-                    'fecha': comprobante_attrib.get('Fecha'),
-                    'forma_pago': comprobante_attrib.get('FormaPago'),
-                    'total': comprobante_attrib.get('Total'),
-                    'emisor': root.find('.//cfdi:Emisor', namespaces).attrib if root.find('.//cfdi:Emisor', namespaces) else {},
-                    'receptor': root.find('.//cfdi:Receptor', namespaces).attrib if root.find('.//cfdi:Receptor', namespaces) else {},
+                    'version': root.attrib.get('Version'),
+                    'folio': root.attrib.get('Folio'),
+                    'fecha': root.attrib.get('Fecha'),
+                    'forma_pago': root.attrib.get('FormaPago'),
+                    'total': datos.get('total'),
+                    'uuid': datos.get('uuid')
                 }
-
-                # Guardar los datos para el siguiente paso (por ejemplo, generación del PDF)
-                request.session['extracted_data'] = extracted_data  # Usar sesión para almacenar datos temporalmente
 
         except Exception as e:
             logger.error(f"Error durante el procesamiento: {e}")
@@ -285,7 +267,6 @@ def upload_xml(request):
     else:
         form = XMLUploadForm()
 
-    # Enviar el formulario y los datos extraídos al contexto
     return render(request, 'upload_xml.html', {'form': form, 'extracted_data': extracted_data})
 
 
@@ -302,53 +283,41 @@ def generate_pdf(request, asegurado_id):
         ).order_by('-fecha_subida').first()
         
         if not documento_xml:
-            logger.error(f"No se encontró documento XML para el asegurado {asegurado_id}")
             messages.error(request, 'No se encontró ningún documento XML para este asegurado.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
         # Obtener los datos del XML
         datos_xml = documento_xml.datos_xml
         if not datos_xml:
-            logger.error(f"El documento XML {documento_xml.id} no tiene datos procesados")
             messages.error(request, 'El documento XML no tiene datos procesados.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
         # Obtener el total del XML
         total = datos_xml.get('total')
         if not total:
-            logger.error(f"No se encontró el total en el documento XML {documento_xml.id}")
             messages.error(request, 'No se encontró el total en el documento XML.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
         # Definir la ruta del template PDF
         pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
-        logger.info(f"Buscando template PDF en: {pdf_template_path}")
         
         # Verificar si el archivo existe
         if not os.path.exists(pdf_template_path):
-            logger.error(f"No se encontró el archivo template en: {pdf_template_path}")
-            messages.error(request, 'Error: No se encontró el template del PDF.')
+            messages.error(request, 'El template del PDF no está disponible en este momento.')
             return redirect('detalle_asegurado', asegurado_id=asegurado_id)
         
         # Crear la respuesta HTTP con el tipo de contenido PDF
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="reporte_{asegurado.id}.pdf"'
         
-        try:
-            # Rellenar el template del PDF con los datos
-            fill_pdf_template(pdf_template_path, response, total)
-            logger.info(f"PDF generado exitosamente para el asegurado {asegurado_id}")
-            return response
-        except Exception as e:
-            logger.error(f"Error al generar el PDF: {str(e)}")
-            messages.error(request, f'Error al generar el PDF: {str(e)}')
-            return redirect('detalle_asegurado', asegurado_id=asegurado_id)
+        # Rellenar el template del PDF con los datos
+        fill_pdf_template(pdf_template_path, response, total)
+        
+        return response
         
     except Asegurado.DoesNotExist:
-        logger.error(f"Asegurado {asegurado_id} no encontrado")
         messages.error(request, 'Asegurado no encontrado.')
         return redirect('lista_asegurados')
     except Exception as e:
-        logger.error(f"Error inesperado al generar PDF: {str(e)}")
-        messages.error(request, f'Error inesperado: {str(e)}')
+        messages.error(request, f'Error al generar el PDF: {str(e)}')
         return redirect('detalle_asegurado', asegurado_id=asegurado_id)
