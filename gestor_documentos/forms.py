@@ -23,6 +23,7 @@ class AseguradoForm(forms.ModelForm):
             'año2': forms.NumberInput(attrs={'min': 1900, 'max': 2100}),
             'año3': forms.NumberInput(attrs={'min': 1900, 'max': 2100}),
             'año4': forms.NumberInput(attrs={'min': 1900, 'max': 2100}),
+            'importe_factura1': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
         }
 
 class DocumentoForm(forms.ModelForm):
