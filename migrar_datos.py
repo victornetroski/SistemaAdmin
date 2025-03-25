@@ -7,13 +7,15 @@ from datetime import datetime
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangocrud.settings')
 django.setup()
 
-from gestor_documentos.models import Asegurado
+from gestion_asegurados.models import Asegurado
 
 def migrar_datos():
     try:
         # Leer el archivo Excel
-        # Reemplaza 'ruta_del_archivo.xlsx' con la ruta real de tu archivo Excel
-        df = pd.read_excel('C:\\Users\\victo\\Desktop\\Asegurados.xlsx')
+        print("Iniciando proceso de migración...")
+        print("Leyendo archivo Excel...")
+        df = pd.read_excel('C:\\Users\\victo\\Desktop\\Asegurados.xlsx', encoding='utf-8')
+        print(f"Total de filas en Excel: {len(df)}")
         
         # Mapeo de columnas de Excel a campos del modelo
         mapeo_campos = {
@@ -42,6 +44,11 @@ def migrar_datos():
             'Año 4': 'año4'
         }
 
+        # Contadores
+        creados = 0
+        actualizados = 0
+        errores = 0
+
         # Procesar cada fila del Excel
         for index, row in df.iterrows():
             try:
@@ -54,7 +61,14 @@ def migrar_datos():
                         # Convertir tipos de datos según sea necesario
                         if campo_modelo == 'fecha_nacimiento' and pd.notna(valor):
                             if isinstance(valor, str):
-                                valor = datetime.strptime(valor, '%Y-%m-%d').date()
+                                try:
+                                    valor = datetime.strptime(valor, '%Y-%m-%d').date()
+                                except ValueError:
+                                    try:
+                                        valor = datetime.strptime(valor, '%d/%m/%Y').date()
+                                    except ValueError:
+                                        print(f"Error al convertir fecha en fila {index}: {valor}")
+                                        valor = None
                             elif isinstance(valor, pd.Timestamp):
                                 valor = valor.date()
                         
@@ -62,28 +76,51 @@ def migrar_datos():
                             valor = bool(valor)
                         
                         elif campo_modelo == 'importe_factura1' and pd.notna(valor):
-                            valor = float(valor)
+                            try:
+                                valor = float(valor)
+                            except (ValueError, TypeError):
+                                print(f"Error al convertir importe en fila {index}: {valor}")
+                                valor = None
                         
                         elif campo_modelo in ['dia1', 'dia2', 'mes1', 'mes2', 'año1', 'año2', 'año3', 'año4']:
                             if pd.notna(valor):
-                                valor = str(int(valor))
+                                try:
+                                    valor = int(valor)
+                                except (ValueError, TypeError):
+                                    print(f"Error al convertir número en fila {index}: {valor}")
+                                    valor = None
                             else:
                                 valor = None
                         
                         datos_asegurado[campo_modelo] = valor
 
                 # Crear o actualizar el asegurado
-                Asegurado.objects.update_or_create(
+                asegurado, creado = Asegurado.objects.update_or_create(
                     id_asegurado=datos_asegurado.get('id_asegurado'),
                     defaults=datos_asegurado
                 )
-                print(f"Asegurado {datos_asegurado.get('id_asegurado')} migrado exitosamente")
+                
+                if creado:
+                    creados += 1
+                else:
+                    actualizados += 1
+                    
+                print(f"Procesado: {datos_asegurado.get('id_asegurado')} - {'Creado' if creado else 'Actualizado'}")
                 
             except Exception as e:
+                errores += 1
                 print(f"Error al procesar fila {index}: {str(e)}")
                 continue
 
-        print("Proceso de migración completado")
+        print("\nResumen de la migración:")
+        print(f"Total de registros procesados: {len(df)}")
+        print(f"Registros creados: {creados}")
+        print(f"Registros actualizados: {actualizados}")
+        print(f"Errores encontrados: {errores}")
+        
+        # Verificar total en la base de datos
+        total_bd = Asegurado.objects.count()
+        print(f"\nTotal de registros en la base de datos: {total_bd}")
         
     except Exception as e:
         print(f"Error general en la migración: {str(e)}")

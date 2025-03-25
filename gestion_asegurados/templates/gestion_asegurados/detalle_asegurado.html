@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="mb-0">Detalles del Asegurado</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Información Personal</h5>
+                            <p><strong>ID Asegurado:</strong> {{ asegurado.id_asegurado|default:"No especificado" }}</p>
+                            <p><strong>ID Póliza:</strong> {{ asegurado.id_poliza|default:"No especificado" }}</p>
+                            <p><strong>Nombre:</strong> {{ asegurado.nombre }}</p>
+                            <p><strong>Apellido Paterno:</strong> {{ asegurado.apellido_paterno }}</p>
+                            <p><strong>Apellido Materno:</strong> {{ asegurado.apellido_materno }}</p>
+                            <p><strong>Fecha de Nacimiento:</strong> {{ asegurado.fecha_nacimiento|date:"d/m/Y"|default:"No especificada" }}</p>
+                            <p><strong>Género:</strong> {{ asegurado.get_genero_display }}</p>
+                            <p><strong>RFC:</strong> {{ asegurado.rfc|default:"No especificado" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Información de Contacto</h5>
+                            <p><strong>Email:</strong> {{ asegurado.email }}</p>
+                            <p><strong>Teléfono:</strong> {{ asegurado.telefono }}</p>
+                            <p><strong>Titular/Cónyuge/Dependiente:</strong> {{ asegurado.titulat_conyuge_dependiente|default:"No especificado" }}</p>
+                            <p><strong>Iniciar Reclamo:</strong> {% if asegurado.iniciar_reclamo %}Sí{% else %}No{% endif %}</p>
+                            <p><strong>Diagnóstico:</strong> {{ asegurado.diagnostico|default:"No especificado" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="mb-3">Información de Facturación</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Número Factura 1:</strong> {{ asegurado.numero_factura1|default:"No especificado" }}</p>
+                                    <p><strong>Importe Factura 1:</strong> ${{ asegurado.importe_factura1|default:"0.00" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if asegurado.archivo_xml %}
+                                    <p><strong>Archivo XML:</strong> <a href="{% url 'descargar_xml' asegurado.pk %}" class="btn btn-sm btn-primary" target="_blank">Descargar XML</a></p>
+                                    {% else %}
+                                    <p><strong>Archivo XML:</strong> No disponible</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="mb-3">Fechas de Servicio</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Día 1:</strong> {{ asegurado.dia1|default:"No especificado" }}</p>
+                                    <p><strong>Día 2:</strong> {{ asegurado.dia2|default:"No especificado" }}</p>
+                                    <p><strong>Mes 1:</strong> {{ asegurado.mes1|default:"No especificado" }}</p>
+                                    <p><strong>Mes 2:</strong> {{ asegurado.mes2|default:"No especificado" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Año 1:</strong> {{ asegurado.año1|default:"No especificado" }}</p>
+                                    <p><strong>Año 2:</strong> {{ asegurado.año2|default:"No especificado" }}</p>
+                                    <p><strong>Año 3:</strong> {{ asegurado.año3|default:"No especificado" }}</p>
+                                    <p><strong>Año 4:</strong> {{ asegurado.año4|default:"No especificado" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Documentos del Asegurado</h3>
+                    <a href="{% url 'subir_documento' asegurado.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-upload me-2"></i>Subir Documento
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if documentos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Fecha Subida</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for documento in documentos %}
+                                <tr>
+                                    <td>{{ documento.nombre }}</td>
+                                    <td>{{ documento.descripcion }}</td>
+                                    <td>{{ documento.fecha_subida|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-success" target="_blank">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        {% if documento.es_xml %}
+                                        <a href="{% url 'ver_detalles_xml' documento.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-code"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center">No hay documentos asociados a este asegurado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Acciones</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'lista_asegurados' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Volver a la Lista
+                        </a>
+                        <a href="{% url 'editar_asegurado' asegurado.pk %}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>Editar Asegurado
+                        </a>
+                        <a href="{% url 'eliminar_asegurado' asegurado.pk %}" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Eliminar Asegurado
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

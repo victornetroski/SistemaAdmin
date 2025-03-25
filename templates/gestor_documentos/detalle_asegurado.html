@@ -33,7 +33,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="mb-0">Documentos del Asegurado</h3>
-                    <a href="{% url 'subir_documento' asegurado.id %}" class="btn btn-primary btn-sm">
+                    <a href="{% url 'subir_documento_asegurado' asegurado.id %}" class="btn btn-primary btn-sm">
                         <i class="fas fa-upload me-2"></i>Subir Documento
                     </a>
                 </div>
@@ -81,7 +81,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Acciones</h5>
                     <div class="d-grid gap-2">
-                        <a href="{% url 'lista_asegurados' %}" class="btn btn-secondary">
+                        <a href="{% url 'gestion_asegurados:lista_asegurados' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Volver a la Lista
                         </a>
                         <a href="{% url 'generate_pdf' asegurado.id %}" class="btn btn-danger">

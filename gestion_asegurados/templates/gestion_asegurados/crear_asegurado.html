@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Asegurado</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.id_asegurado.id_for_label }}" class="form-label">ID Asegurado</label>
+                                {{ form.id_asegurado }}
+                                {% if form.id_asegurado.errors %}
+                                <div class="alert alert-danger">{{ form.id_asegurado.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.id_poliza.id_for_label }}" class="form-label">ID Póliza</label>
+                                {{ form.id_poliza }}
+                                {% if form.id_poliza.errors %}
+                                <div class="alert alert-danger">{{ form.id_poliza.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre</label>
+                                {{ form.nombre }}
+                                {% if form.nombre.errors %}
+                                <div class="alert alert-danger">{{ form.nombre.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.apellido_paterno.id_for_label }}" class="form-label">Apellido Paterno</label>
+                                {{ form.apellido_paterno }}
+                                {% if form.apellido_paterno.errors %}
+                                <div class="alert alert-danger">{{ form.apellido_paterno.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.apellido_materno.id_for_label }}" class="form-label">Apellido Materno</label>
+                                {{ form.apellido_materno }}
+                                {% if form.apellido_materno.errors %}
+                                <div class="alert alert-danger">{{ form.apellido_materno.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">Fecha de Nacimiento</label>
+                                {{ form.fecha_nacimiento }}
+                                {% if form.fecha_nacimiento.errors %}
+                                <div class="alert alert-danger">{{ form.fecha_nacimiento.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.genero.id_for_label }}" class="form-label">Género</label>
+                                {{ form.genero }}
+                                {% if form.genero.errors %}
+                                <div class="alert alert-danger">{{ form.genero.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.rfc.id_for_label }}" class="form-label">RFC</label>
+                                {{ form.rfc }}
+                                {% if form.rfc.errors %}
+                                <div class="alert alert-danger">{{ form.rfc.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="alert alert-danger">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.telefono.id_for_label }}" class="form-label">Teléfono</label>
+                                {{ form.telefono }}
+                                {% if form.telefono.errors %}
+                                <div class="alert alert-danger">{{ form.telefono.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.titulat_conyuge_dependiente.id_for_label }}" class="form-label">Titular/Cónyuge/Dependiente</label>
+                                {{ form.titulat_conyuge_dependiente }}
+                                {% if form.titulat_conyuge_dependiente.errors %}
+                                <div class="alert alert-danger">{{ form.titulat_conyuge_dependiente.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.iniciar_reclamo }}
+                                    <label class="form-check-label" for="{{ form.iniciar_reclamo.id_for_label }}">
+                                        Iniciar Reclamo
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.diagnostico.id_for_label }}" class="form-label">Diagnóstico</label>
+                                {{ form.diagnostico }}
+                                {% if form.diagnostico.errors %}
+                                <div class="alert alert-danger">{{ form.diagnostico.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.numero_factura1.id_for_label }}" class="form-label">Número Factura 1</label>
+                                {{ form.numero_factura1 }}
+                                {% if form.numero_factura1.errors %}
+                                <div class="alert alert-danger">{{ form.numero_factura1.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.importe_factura1.id_for_label }}" class="form-label">Importe Factura 1</label>
+                                {{ form.importe_factura1 }}
+                                {% if form.importe_factura1.errors %}
+                                <div class="alert alert-danger">{{ form.importe_factura1.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.archivo_xml.id_for_label }}" class="form-label">Archivo XML</label>
+                            {{ form.archivo_xml }}
+                            {% if form.archivo_xml.errors %}
+                            <div class="alert alert-danger">{{ form.archivo_xml.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <h4 class="mb-3">Fechas de Servicio</h4>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.dia1.id_for_label }}" class="form-label">Día 1</label>
+                                {{ form.dia1 }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.dia2.id_for_label }}" class="form-label">Día 2</label>
+                                {{ form.dia2 }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.mes1.id_for_label }}" class="form-label">Mes 1</label>
+                                {{ form.mes1 }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.mes2.id_for_label }}" class="form-label">Mes 2</label>
+                                {{ form.mes2 }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.año1.id_for_label }}" class="form-label">Año 1</label>
+                                {{ form.año1 }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.año2.id_for_label }}" class="form-label">Año 2</label>
+                                {{ form.año2 }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.año3.id_for_label }}" class="form-label">Año 3</label>
+                                {{ form.año3 }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.año4.id_for_label }}" class="form-label">Año 4</label>
+                                {{ form.año4 }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar
+                            </button>
+                            <a href="{% url 'lista_asegurados' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

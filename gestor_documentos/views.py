@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Documento, Asegurado
-from .forms import DocumentoForm, AseguradoForm
+from .models import Documento
+from gestion_asegurados.models import Asegurado
+from .forms import DocumentoForm
 from gestor_xml.views import procesar_xml
 import xml.etree.ElementTree as ET
 import os
@@ -23,23 +24,6 @@ def lista_asegurados(request):
     return render(request, 'gestor_documentos/lista_asegurados.html', {
         'asegurados': asegurados
     })
-
-@login_required
-def agregar_asegurado(request):
-    if request.method == 'POST':
-        form = AseguradoForm(request.POST, request.FILES)
-        if form.is_valid():
-            asegurado = form.save(commit=False)
-            asegurado.usuario = request.user
-            asegurado.save()
-            messages.success(request, 'Asegurado agregado exitosamente.')
-            return redirect('lista_asegurados')
-        else:
-            messages.error(request, 'Por favor, corrija los errores en el formulario.')
-    else:
-        form = AseguradoForm()
-    
-    return render(request, 'gestor_documentos/agregar_asegurado.html', {'form': form})
 
 @login_required
 def detalle_asegurado(request, asegurado_id):
@@ -85,7 +69,7 @@ def subir_documento(request, asegurado_id=None):
             messages.success(request, 'Documento subido exitosamente.')
             
             if asegurado_id:
-                return redirect('detalle_asegurado', asegurado_id=asegurado_id)
+                return redirect('gestion_asegurados:detalle_asegurado', pk=asegurado_id)
             return redirect('principal')
     else:
         form = DocumentoForm()
@@ -98,38 +82,23 @@ def subir_documento(request, asegurado_id=None):
 
 @login_required
 def ver_detalles_xml(request, documento_id):
-    documento = Documento.objects.get(id=documento_id, usuario=request.user)
-    
-    try:
-        # Procesar el XML
-        root, datos = procesar_xml(documento.archivo)
-        if root:
-            return render(request, 'gestor_documentos/detalles_xml.html', {
-                'documento': documento,
-                'ns0_data': datos.get('ns0_data', []),
-                'total': datos.get('total'),
-                'uuid': datos.get('uuid')
-            })
-        else:
-            messages.error(request, 'Error al procesar el XML.')
-            return redirect('gestor_documentos')
-    except Exception as e:
-        messages.error(request, f'Error al procesar el XML: {str(e)}')
-        return redirect('gestor_documentos')
+    documento = get_object_or_404(Documento, id=documento_id, usuario=request.user)
+    if not documento.es_xml or not documento.datos_xml:
+        messages.error(request, 'Este documento no es un XML válido.')
+        return redirect('principal')
+    return render(request, 'gestor_documentos/ver_detalles_xml.html', {
+        'documento': documento,
+        'datos_xml': documento.datos_xml
+    })
 
 @login_required
 def buscar_documento(request):
-    documentos = Documento.objects.filter(usuario=request.user)
-    busqueda = request.GET.get('busqueda', '')
-    
-    if busqueda:
-        documentos = documentos.filter(
-            nombre__icontains=busqueda
-        ) | documentos.filter(
-            descripcion__icontains=busqueda
-        )
-    
+    query = request.GET.get('q', '')
+    documentos = Documento.objects.filter(
+        usuario=request.user,
+        nombre__icontains=query
+    )
     return render(request, 'gestor_documentos/buscar_documento.html', {
         'documentos': documentos,
-        'busqueda': busqueda
+        'query': query
     })
