@@ -2,36 +2,48 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center mb-4">Subir Documento</h1>
-    
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Subir Documento</h2>
+                </div>
                 <div class="card-body">
-                    <form method="POST" enctype="multipart/form-data">
+                    {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="documento" class="form-label">Seleccionar Documento</label>
-                            <input type="file" class="form-control" id="documento" name="documento" required>
+                            <label for="{{ form.archivo.id_for_label }}" class="form-label">Archivo</label>
+                            {{ form.archivo }}
                             <div class="form-text">Se aceptan archivos XML y otros documentos. Los archivos XML serán procesados automáticamente.</div>
                         </div>
                         <div class="mb-3">
-                            <label for="descripcion" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                            <label for="{{ form.descripcion.id_for_label }}" class="form-label">Descripción</label>
+                            {{ form.descripcion }}
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Subir Documento</button>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>Subir Documento
+                            </button>
+                            {% if asegurado_id %}
+                            <a href="{% url 'detalle_asegurado' asegurado_id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            {% else %}
+                            <a href="{% url 'principal' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

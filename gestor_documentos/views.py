@@ -48,60 +48,56 @@ def detalle_asegurado(request, asegurado_id):
     })
 
 @login_required
-def subir_documento(request):
+def subir_documento(request, asegurado_id=None):
     if request.method == 'POST':
-        try:
-            archivo = request.FILES['documento']
-            descripcion = request.POST.get('descripcion', '')
-            asegurado_id = request.POST.get('asegurado')
+        form = DocumentoForm(request.POST, request.FILES)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.usuario = request.user
             
-            # Verificar si el archivo es XML
-            if archivo.name.lower().endswith('.xml'):
+            if asegurado_id:
                 try:
-                    # Guardar el documento XML primero
-                    documento = Documento.objects.create(
-                        nombre=archivo.name,
-                        archivo=archivo,
-                        descripcion=descripcion,
-                        usuario=request.user,
-                        asegurado_id=asegurado_id
-                    )
-                    
+                    asegurado = Asegurado.objects.get(id=asegurado_id, usuario=request.user)
+                    documento.asegurado = asegurado
+                except Asegurado.DoesNotExist:
+                    messages.error(request, 'Asegurado no encontrado.')
+                    return redirect('principal')
+            
+            # Verificar si es un archivo XML
+            if documento.archivo.name.lower().endswith('.xml'):
+                try:
                     # Procesar el XML
                     root = procesar_xml(documento.archivo)
-                    if root:
+                    if root is not None:
+                        documento.es_xml = True
                         # Extraer información del XML
                         ns0_data = extract_ns0_elements(root)
-                        total = extract_total(ns0_data)
-                        
-                        # Redirigir a la vista de detalles del XML
-                        return redirect('ver_detalles_xml', documento_id=documento.id)
+                        total = extract_total(root)
+                        documento.datos_xml = {
+                            'ns0_data': ns0_data,
+                            'total': total
+                        }
                     else:
                         messages.error(request, 'Error al procesar el archivo XML.')
-                        documento.delete()  # Eliminar el documento si hay error
-                except ET.ParseError as e:
+                        return redirect('principal')
+                except Exception as e:
                     messages.error(request, f'Error al procesar el archivo XML: {str(e)}')
-                    return render(request, 'gestor_documentos/subir_documento.html')
-            else:
-                # Si no es XML, guardar como documento normal
-                documento = Documento.objects.create(
-                    nombre=archivo.name,
-                    archivo=archivo,
-                    descripcion=descripcion,
-                    usuario=request.user,
-                    asegurado_id=asegurado_id
-                )
-                messages.success(request, 'Documento subido exitosamente.')
+                    return redirect('principal')
             
-            return redirect('gestor_documentos')
-        except Exception as e:
-            messages.error(request, f'Error al subir el documento: {str(e)}')
+            documento.save()
+            messages.success(request, 'Documento subido exitosamente.')
+            
+            if asegurado_id:
+                return redirect('detalle_asegurado', asegurado_id=asegurado_id)
+            return redirect('principal')
+    else:
+        form = DocumentoForm()
     
-    # Obtener lista de asegurados para el formulario
-    asegurados = Asegurado.objects.filter(usuario=request.user)
-    return render(request, 'gestor_documentos/subir_documento.html', {
-        'asegurados': asegurados
-    })
+    context = {
+        'form': form,
+        'asegurado_id': asegurado_id
+    }
+    return render(request, 'gestor_documentos/subir_documento.html', context)
 
 @login_required
 def ver_detalles_xml(request, documento_id):

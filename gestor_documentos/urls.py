@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from gestor_xml.views import generate_pdf
+from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     path('', views.principal, name='principal'),
@@ -8,7 +9,7 @@ urlpatterns = [
     path('asegurados/agregar/', views.agregar_asegurado, name='agregar_asegurado'),
     path('asegurados/<int:asegurado_id>/', views.detalle_asegurado, name='detalle_asegurado'),
     path('asegurados/<int:asegurado_id>/subir-documento/', views.subir_documento, name='subir_documento'),
-    path('asegurados/<int:asegurado_id>/generar-pdf/', generate_pdf, name='generate_pdf'),
+    path('asegurados/<int:asegurado_id>/generar-pdf/', login_required(generate_pdf), name='generate_pdf'),
     path('xml/<int:documento_id>/', views.ver_detalles_xml, name='ver_detalles_xml'),
     path('buscar/', views.buscar_documento, name='buscar_documento'),
 ] 
