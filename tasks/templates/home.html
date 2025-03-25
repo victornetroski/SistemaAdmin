@@ -1,12 +1,45 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
-<main class="container py-5" >
-    <section class="card card-body">
-        <h1 class="text-center">Bienvenido al Sistema Administrativo</h1>
-        <p class="text-center">Bienvenid@</p>
-    </section>
-</main>
-
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <h1 class="display-4 mb-4">Bienvenido al Sistema Administrativo</h1>
+                    <p class="lead mb-4">Sistema de gestión de tareas y documentos</p>
+                    
+                    {% if user.is_authenticated %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Tareas</h5>
+                                        <p class="card-text">Gestiona tus tareas pendientes y completadas</p>
+                                        <a href="{% url 'tasks' %}" class="btn btn-primary">Ver Tareas</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Documentos</h5>
+                                        <p class="card-text">Gestiona tus documentos y archivos XML</p>
+                                        <a href="{% url 'gestor_documentos' %}" class="btn btn-success">Ver Documentos</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="mt-4">
+                            <p>Por favor, inicia sesión para acceder al sistema</p>
+                            <a href="{% url 'signin' %}" class="btn btn-primary me-2">Iniciar Sesión</a>
+                            <a href="{% url 'signup' %}" class="btn btn-outline-primary">Registrarse</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

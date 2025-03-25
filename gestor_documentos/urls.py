@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     path('', views.principal, name='principal'),
+    path('gestor_documentos/', views.principal, name='gestor_documentos'),  # URL para el enlace en el template base
     path('asegurados/', views.lista_asegurados, name='lista_asegurados'),
     path('asegurados/agregar/', views.agregar_asegurado, name='agregar_asegurado'),
     path('asegurados/<int:asegurado_id>/', views.detalle_asegurado, name='detalle_asegurado'),
