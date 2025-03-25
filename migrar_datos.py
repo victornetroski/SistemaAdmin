@@ -1,4 +1,4 @@
-import csv
+import pandas as pd
 import os
 import django
 from datetime import datetime
@@ -8,60 +8,85 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangocrud.settings')
 django.setup()
 
 from gestor_documentos.models import Asegurado
-from django.contrib.auth.models import User
 
-def migrar_datos(csv_file):
-    # Obtener el primer usuario (o crear uno si no existe)
+def migrar_datos():
     try:
-        usuario = User.objects.first()
-    except:
-        usuario = User.objects.create_user('admin', 'admin@example.com', 'admin')
-        usuario.is_staff = True
-        usuario.save()
+        # Leer el archivo Excel
+        # Reemplaza 'ruta_del_archivo.xlsx' con la ruta real de tu archivo Excel
+        df = pd.read_excel('C:\\Users\\victo\\Desktop\\Asegurados.xlsx')
+        
+        # Mapeo de columnas de Excel a campos del modelo
+        mapeo_campos = {
+            'ID Asegurado': 'id_asegurado',
+            'ID Póliza': 'id_poliza',
+            'Nombre': 'nombre',
+            'Apellido Paterno': 'apellido_paterno',
+            'Apellido Materno': 'apellido_materno',
+            'Fecha de Nacimiento': 'fecha_nacimiento',
+            'Género': 'genero',
+            'RFC': 'rfc',
+            'Email': 'email',
+            'Teléfono': 'telefono',
+            'Titular/Cónyuge/Dependiente': 'titulat_conyuge_dependiente',
+            'Iniciar Reclamo': 'iniciar_reclamo',
+            'Diagnóstico': 'diagnostico',
+            'Número Factura 1': 'numero_factura1',
+            'Importe Factura 1': 'importe_factura1',
+            'Día 1': 'dia1',
+            'Día 2': 'dia2',
+            'Mes 1': 'mes1',
+            'Mes 2': 'mes2',
+            'Año 1': 'año1',
+            'Año 2': 'año2',
+            'Año 3': 'año3',
+            'Año 4': 'año4'
+        }
 
-    with open(csv_file, 'r', encoding='utf-8') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
+        # Procesar cada fila del Excel
+        for index, row in df.iterrows():
             try:
-                # Convertir fecha si existe
-                fecha_nacimiento = None
-                if row.get('fecha_nacimiento'):
-                    try:
-                        fecha_nacimiento = datetime.strptime(row['fecha_nacimiento'], '%Y-%m-%d').date()
-                    except:
-                        pass
+                # Crear diccionario con los datos mapeados
+                datos_asegurado = {}
+                for col_excel, campo_modelo in mapeo_campos.items():
+                    if col_excel in row:
+                        valor = row[col_excel]
+                        
+                        # Convertir tipos de datos según sea necesario
+                        if campo_modelo == 'fecha_nacimiento' and pd.notna(valor):
+                            if isinstance(valor, str):
+                                valor = datetime.strptime(valor, '%Y-%m-%d').date()
+                            elif isinstance(valor, pd.Timestamp):
+                                valor = valor.date()
+                        
+                        elif campo_modelo == 'iniciar_reclamo':
+                            valor = bool(valor)
+                        
+                        elif campo_modelo == 'importe_factura1' and pd.notna(valor):
+                            valor = float(valor)
+                        
+                        elif campo_modelo in ['dia1', 'dia2', 'mes1', 'mes2', 'año1', 'año2', 'año3', 'año4']:
+                            if pd.notna(valor):
+                                valor = str(int(valor))
+                            else:
+                                valor = None
+                        
+                        datos_asegurado[campo_modelo] = valor
 
-                # Crear el asegurado
-                asegurado = Asegurado.objects.create(
-                    id_asegurado=row.get('id_asegurado'),
-                    id_poliza=row.get('id_poliza'),
-                    nombre=row.get('nombre'),
-                    apellido_paterno=row.get('apellido_paterno'),
-                    apellido_materno=row.get('apellido_materno'),
-                    fecha_nacimiento=fecha_nacimiento,
-                    genero=row.get('genero', 'O'),
-                    rfc=row.get('rfc'),
-                    email=row.get('email'),
-                    telefono=row.get('telefono'),
-                    titulat_conyuge_dependiente=row.get('titulat_conyuge_dependiente'),
-                    iniciar_reclamo=row.get('iniciar_reclamo', '').lower() == 'true',
-                    diagnostico=row.get('diagnostico'),
-                    numero_factura1=row.get('numero_factura1'),
-                    importe_factura1=row.get('importe_factura1'),
-                    dia1=row.get('dia1'),
-                    dia2=row.get('dia2'),
-                    mes1=row.get('mes1'),
-                    mes2=row.get('mes2'),
-                    año1=row.get('año1'),
-                    año2=row.get('año2'),
-                    año3=row.get('año3'),
-                    año4=row.get('año4'),
-                    usuario=usuario
+                # Crear o actualizar el asegurado
+                Asegurado.objects.update_or_create(
+                    id_asegurado=datos_asegurado.get('id_asegurado'),
+                    defaults=datos_asegurado
                 )
-                print(f"Asegurado creado: {asegurado.nombre} {asegurado.apellido_paterno}")
+                print(f"Asegurado {datos_asegurado.get('id_asegurado')} migrado exitosamente")
+                
             except Exception as e:
-                print(f"Error al crear asegurado: {str(e)}")
+                print(f"Error al procesar fila {index}: {str(e)}")
+                continue
 
-if __name__ == '__main__':
-    # Reemplaza 'datos_asegurados.csv' con el nombre de tu archivo CSV
-    migrar_datos('datos_asegurados.csv') 
+        print("Proceso de migración completado")
+        
+    except Exception as e:
+        print(f"Error general en la migración: {str(e)}")
+
+if __name__ == "__main__":
+    migrar_datos() 
