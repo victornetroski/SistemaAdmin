@@ -1,7 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Documento
+from .models import Documento, Asegurado
 from gestor_xml.views import procesar_xml, extract_ns0_elements, extract_total
 import xml.etree.ElementTree as ET
 import os
@@ -13,11 +13,47 @@ def principal(request):
     return render(request, 'gestor_documentos.html')
 
 @login_required
+def lista_asegurados(request):
+    asegurados = Asegurado.objects.filter(usuario=request.user)
+    return render(request, 'gestor_documentos/lista_asegurados.html', {
+        'asegurados': asegurados
+    })
+
+@login_required
+def agregar_asegurado(request):
+    if request.method == 'POST':
+        try:
+            asegurado = Asegurado.objects.create(
+                nombre=request.POST['nombre'],
+                apellido_paterno=request.POST['apellido_paterno'],
+                apellido_materno=request.POST['apellido_materno'],
+                email=request.POST['email'],
+                telefono=request.POST['telefono'],
+                usuario=request.user
+            )
+            messages.success(request, 'Asegurado agregado exitosamente.')
+            return redirect('lista_asegurados')
+        except Exception as e:
+            messages.error(request, f'Error al agregar asegurado: {str(e)}')
+    
+    return render(request, 'gestor_documentos/agregar_asegurado.html')
+
+@login_required
+def detalle_asegurado(request, asegurado_id):
+    asegurado = get_object_or_404(Asegurado, id=asegurado_id, usuario=request.user)
+    documentos = Documento.objects.filter(asegurado=asegurado)
+    return render(request, 'gestor_documentos/detalle_asegurado.html', {
+        'asegurado': asegurado,
+        'documentos': documentos
+    })
+
+@login_required
 def subir_documento(request):
     if request.method == 'POST':
         try:
             archivo = request.FILES['documento']
             descripcion = request.POST.get('descripcion', '')
+            asegurado_id = request.POST.get('asegurado')
             
             # Verificar si el archivo es XML
             if archivo.name.lower().endswith('.xml'):
@@ -27,7 +63,8 @@ def subir_documento(request):
                         nombre=archivo.name,
                         archivo=archivo,
                         descripcion=descripcion,
-                        usuario=request.user
+                        usuario=request.user,
+                        asegurado_id=asegurado_id
                     )
                     
                     # Procesar el XML
@@ -51,7 +88,8 @@ def subir_documento(request):
                     nombre=archivo.name,
                     archivo=archivo,
                     descripcion=descripcion,
-                    usuario=request.user
+                    usuario=request.user,
+                    asegurado_id=asegurado_id
                 )
                 messages.success(request, 'Documento subido exitosamente.')
             
@@ -59,7 +97,11 @@ def subir_documento(request):
         except Exception as e:
             messages.error(request, f'Error al subir el documento: {str(e)}')
     
-    return render(request, 'gestor_documentos/subir_documento.html')
+    # Obtener lista de asegurados para el formulario
+    asegurados = Asegurado.objects.filter(usuario=request.user)
+    return render(request, 'gestor_documentos/subir_documento.html', {
+        'asegurados': asegurados
+    })
 
 @login_required
 def ver_detalles_xml(request, documento_id):

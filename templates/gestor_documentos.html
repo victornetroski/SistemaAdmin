@@ -2,21 +2,40 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center mb-4">Gestor de Documentos</h1>
-    
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title text-center mb-4">Opciones</h5>
-                    <div class="d-grid gap-3">
-                        <a href="{% url 'subir_documento' %}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-upload me-2"></i>Subir Documento
-                        </a>
-                        <a href="{% url 'buscar_documento' %}" class="btn btn-success btn-lg">
-                            <i class="fas fa-search me-2"></i>Buscar Documento
-                        </a>
-                    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-3x mb-3 text-primary"></i>
+                    <h5 class="card-title">Asegurados</h5>
+                    <p class="card-text">Gestiona la información de los asegurados y sus documentos.</p>
+                    <a href="{% url 'lista_asegurados' %}" class="btn btn-primary">
+                        <i class="fas fa-list me-2"></i>Ver Asegurados
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-upload fa-3x mb-3 text-success"></i>
+                    <h5 class="card-title">Subir Documento</h5>
+                    <p class="card-text">Sube documentos XML y otros archivos relacionados.</p>
+                    <a href="{% url 'subir_documento' %}" class="btn btn-success">
+                        <i class="fas fa-upload me-2"></i>Subir Documento
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-search fa-3x mb-3 text-info"></i>
+                    <h5 class="card-title">Buscar Documento</h5>
+                    <p class="card-text">Busca documentos por nombre o descripción.</p>
+                    <a href="{% url 'buscar_documento' %}" class="btn btn-info">
+                        <i class="fas fa-search me-2"></i>Buscar
+                    </a>
                 </div>
             </div>
         </div>

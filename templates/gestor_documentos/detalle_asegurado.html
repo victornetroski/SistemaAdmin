@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="mb-0">Detalles del Asegurado</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nombre:</strong> {{ asegurado.nombre }}</p>
+                            <p><strong>Apellido Paterno:</strong> {{ asegurado.apellido_paterno }}</p>
+                            <p><strong>Apellido Materno:</strong> {{ asegurado.apellido_materno }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Email:</strong> {{ asegurado.email }}</p>
+                            <p><strong>Teléfono:</strong> {{ asegurado.telefono }}</p>
+                            <p><strong>Fecha de Nacimiento:</strong> {{ asegurado.fecha_nacimiento|date:"d/m/Y" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Dirección:</strong> {{ asegurado.direccion }}</p>
+                            <p><strong>Fecha de Registro:</strong> {{ asegurado.fecha_registro|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Documentos del Asegurado</h3>
+                    <a href="{% url 'subir_documento' asegurado.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-upload me-2"></i>Subir Documento
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if documentos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Fecha Subida</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for documento in documentos %}
+                                <tr>
+                                    <td>{{ documento.nombre }}</td>
+                                    <td>{{ documento.descripcion }}</td>
+                                    <td>{{ documento.fecha_subida|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-success" target="_blank">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        {% if documento.es_xml %}
+                                        <a href="{% url 'ver_detalles_xml' documento.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-code"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center">No hay documentos asociados a este asegurado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Acciones</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'lista_asegurados' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Volver a la Lista
+                        </a>
+                        <a href="{% url 'generate_pdf' asegurado.id %}" class="btn btn-danger">
+                            <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
