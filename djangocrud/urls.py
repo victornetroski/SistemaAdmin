@@ -27,5 +27,4 @@ urlpatterns = [
     path('logout/', task_views.signout, name='logout'),  # Cerrar sesión
     path('tasks/', include('tasks.urls')),  # Incluye las rutas de `tasks`
     path('gestor_xml/', include('gestor_xml.urls')),  # Incluye las rutas de `gestor_xml`
-    path('gestor_documentos/', include('gestor_documentos.urls')),  # Incluye las rutas de `gestor_documentos`
 ]
