@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Documento, Asegurado
-from gestor_xml.views import procesar_xml, extract_ns0_elements, extract_total
+from .forms import DocumentoForm
+from gestor_xml.views import procesar_xml
 import xml.etree.ElementTree as ET
 import os
 
@@ -67,16 +68,10 @@ def subir_documento(request, asegurado_id=None):
             if documento.archivo.name.lower().endswith('.xml'):
                 try:
                     # Procesar el XML
-                    root = procesar_xml(documento.archivo)
+                    root, datos = procesar_xml(documento.archivo)
                     if root is not None:
                         documento.es_xml = True
-                        # Extraer información del XML
-                        ns0_data = extract_ns0_elements(root)
-                        total = extract_total(root)
-                        documento.datos_xml = {
-                            'ns0_data': ns0_data,
-                            'total': total
-                        }
+                        documento.datos_xml = datos
                     else:
                         messages.error(request, 'Error al procesar el archivo XML.')
                         return redirect('principal')
@@ -105,22 +100,13 @@ def ver_detalles_xml(request, documento_id):
     
     try:
         # Procesar el XML
-        root = procesar_xml(documento.archivo)
+        root, datos = procesar_xml(documento.archivo)
         if root:
-            # Extraer información
-            ns0_data = extract_ns0_elements(root)
-            total = extract_total(ns0_data)
-            
-            # Obtener el UUID del timbre fiscal
-            namespaces = {'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
-            timbre = root.find('.//tfd:TimbreFiscalDigital', namespaces)
-            uuid = timbre.attrib.get('UUID') if timbre is not None else None
-            
             return render(request, 'gestor_documentos/detalles_xml.html', {
                 'documento': documento,
-                'ns0_data': ns0_data,
-                'total': total,
-                'uuid': uuid
+                'ns0_data': datos.get('ns0_data', []),
+                'total': datos.get('total'),
+                'uuid': datos.get('uuid')
             })
         else:
             messages.error(request, 'Error al procesar el XML.')
