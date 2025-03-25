@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from tasks import views as task_views
 from gestor_xml import views as gestor_xml_views
 
@@ -28,5 +30,8 @@ urlpatterns = [
     path('tasks/', include('tasks.urls')),  # Incluye las rutas de `tasks`
     path('gestor_xml/', include('gestor_xml.urls')),  # Incluye las rutas de `gestor_xml`
     path('gestor_documentos/', include('gestor_documentos.urls')),  # Incluye las rutas de `gestor_documentos`
-    path('gestion-asegurados/', include('gestion_asegurados.urls')),
-]
+    path('gestion_asegurados/', include('gestion_asegurados.urls')),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
