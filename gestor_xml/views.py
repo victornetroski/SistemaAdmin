@@ -19,6 +19,7 @@ from .models import Comprobante, Emisor, Receptor, Concepto, Traslado, Impuestos
 from django.contrib import messages
 from django.utils.timezone import make_aware
 from datetime import datetime
+from .models import Asegurado, Documento
 
 logger = logging.getLogger(__name__)
 
@@ -267,17 +268,49 @@ def upload_xml(request):
 
 
 @login_required
-def generate_pdf(request):
-    extracted_data = request.session.get('extracted_data', None)  # Recuperar datos de sesión
-
-    if extracted_data:
-        pdf_template_path = os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf')
+def generate_pdf(request, asegurado_id):
+    try:
+        # Obtener el asegurado
+        asegurado = Asegurado.objects.get(id=asegurado_id, usuario=request.user)
+        
+        # Obtener el último documento XML del asegurado
+        documento_xml = Documento.objects.filter(
+            asegurado=asegurado,
+            es_xml=True
+        ).order_by('-fecha_subida').first()
+        
+        if not documento_xml:
+            messages.error(request, 'No se encontró ningún documento XML para este asegurado.')
+            return redirect('detalle_asegurado', asegurado_id=asegurado_id)
+        
+        # Obtener los datos del XML
+        datos_xml = documento_xml.datos_xml
+        if not datos_xml:
+            messages.error(request, 'El documento XML no tiene datos procesados.')
+            return redirect('detalle_asegurado', asegurado_id=asegurado_id)
+        
+        # Obtener el total del XML
+        total = datos_xml.get('total')
+        if not total:
+            messages.error(request, 'No se encontró el total en el documento XML.')
+            return redirect('detalle_asegurado', asegurado_id=asegurado_id)
+        
+        # Crear la respuesta HTTP con el tipo de contenido PDF
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="output.pdf"'
-
-        # Rellenar el PDF con el valor de 'Total'
-        fill_pdf_template(pdf_template_path, response, extracted_data.get('total'))
+        response['Content-Disposition'] = f'attachment; filename="reporte_{asegurado.id}.pdf"'
+        
+        # Rellenar el template del PDF con los datos
+        fill_pdf_template(
+            os.path.join(settings.BASE_DIR, 'tasks', 'pdfs', 'BUPA_FORMATO_REEMBOLSO.pdf'),
+            response,
+            total
+        )
+        
         return response
-
-    messages.error(request, "No hay datos disponibles para generar el PDF.")
-    return redirect('upload_xml')  # Redirigir al formulario principal
+        
+    except Asegurado.DoesNotExist:
+        messages.error(request, 'Asegurado no encontrado.')
+        return redirect('lista_asegurados')
+    except Exception as e:
+        messages.error(request, f'Error al generar el PDF: {str(e)}')
+        return redirect('detalle_asegurado', asegurado_id=asegurado_id)
