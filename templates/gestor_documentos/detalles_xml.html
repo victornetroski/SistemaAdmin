@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Detalles del Documento XML</h1>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Información del Documento</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Nombre:</strong> {{ documento.nombre }}</p>
+                            <p><strong>Descripción:</strong> {{ documento.descripcion }}</p>
+                            <p><strong>Fecha de subida:</strong> {{ documento.fecha_subida|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>UUID:</strong> {{ uuid|default:"No disponible" }}</p>
+                            <p><strong>Total:</strong> ${{ total|default:"0.00" }}</p>
+                        </div>
+                    </div>
+
+                    <h5 class="card-title mt-4">Datos del XML</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Etiqueta</th>
+                                    <th>Atributos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in ns0_data %}
+                                    {% for tag, attrs in data.items %}
+                                    <tr>
+                                        <td>{{ tag }}</td>
+                                        <td>
+                                            <ul class="list-unstyled mb-0">
+                                                {% for key, value in attrs.items %}
+                                                <li><strong>{{ key }}:</strong> {{ value }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'gestor_documentos' %}" class="btn btn-secondary">Volver</a>
+                        <a href="{{ documento.archivo.url }}" class="btn btn-primary" target="_blank">Descargar XML</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
