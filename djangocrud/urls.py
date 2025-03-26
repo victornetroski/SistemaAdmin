@@ -26,6 +26,7 @@ urlpatterns = [
     path('', task_views.home, name='home'),  # Ruta para la página principal
     path('signup/', task_views.signup, name='signup'),  # Registro de usuario
     path('signin/', task_views.signin, name='signin'),  # Inicio de sesión
+    path('login/', task_views.signin, name='login'),  # Alias para signin
     path('logout/', task_views.signout, name='logout'),  # Cerrar sesión
     path('tasks/', include('tasks.urls')),  # Incluye las rutas de `tasks`
     path('gestor_xml/', include('gestor_xml.urls')),  # Incluye las rutas de `gestor_xml`
