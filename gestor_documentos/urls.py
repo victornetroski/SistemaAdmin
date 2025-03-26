@@ -3,6 +3,8 @@ from . import views
 from gestor_xml.views import generate_pdf
 from django.contrib.auth.decorators import login_required
 
+app_name = 'gestor_documentos'
+
 urlpatterns = [
     path('', views.principal, name='principal'),
     path('gestor_documentos/', views.principal, name='gestor_documentos'),  # URL para el enlace en el template base
